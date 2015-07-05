@@ -1,3 +1,28 @@
+class ZombiePirate {
+	sprite: Sprite;
+	health: number = 10;
+	walkspeed: number = 2;
+	constructor() {
+		// Set Sprite
+		var image : any = new Image();
+		image.src = "images/zombie-pirate.png";
+		this.sprite = new Sprite(32, 48, image);
+		this.sprite.x = 4 * 32;
+		this.sprite.y = 4 * 32;
+		this.sprite.setGrids();
+		// Set AnimationStates for Sprite
+		this.sprite.addState(new AnimationState("walkDown", [[1,1],[1,2],[1,3]]));
+		this.sprite.addState(new AnimationState("walkLeft", [[2,1],[2,2],[2,3]]));
+		this.sprite.addState(new AnimationState("walkRight",[[3,1],[3,2],[3,3]]));
+		this.sprite.addState(new AnimationState("walkUp", 	[[4,1],[4,2],[4,3]]));
+
+		this.sprite.addState(new AnimationState("standDown", [[1,2]]));
+		this.sprite.addState(new AnimationState("standLeft", [[2,2]]));
+		this.sprite.addState(new AnimationState("standRight",[[3,2]]));
+		this.sprite.addState(new AnimationState("standUp",	 [[4,2]]));
+		this.sprite.setState("standDown");
+	}
+}
 class Player {
 	sprite: Sprite;
 	health: number = 100;
@@ -156,31 +181,73 @@ class Sprite {
 }
 class Controls {
 
+	UpPressed: boolean = false;
+	LeftPressed: boolean = false;
+	DownPressed: boolean = false;
+	RightPressed: boolean = false;
+	constructor() {}
 	update(event) {
-		// Movement
-		if(event.key == "ArrowDown" && event.type == 'keydown' && Game.getInstance().player.sprite.currentState.name != 'walkDown') {
-			Game.getInstance().player.sprite.setState('walkDown');
-		} else if(event.key == "ArrowUp" && event.type == 'keydown' && Game.getInstance().player.sprite.currentState.name != 'walkUp') {
-			Game.getInstance().player.sprite.setState('walkUp');
-		} else if(event.key == "ArrowLeft" && event.type == 'keydown' && Game.getInstance().player.sprite.currentState.name != 'walkLeft') {
-			Game.getInstance().player.sprite.setState('walkLeft');
-		} else if(event.key == "ArrowRight" && event.type == 'keydown' && Game.getInstance().player.sprite.currentState.name != 'walkRight') {
-			Game.getInstance().player.sprite.setState('walkRight');
-		} // Keyup
-		else if(event.key == "ArrowRight" && event.type == 'keyup' && Game.getInstance().player.sprite.currentState.name == 'walkRight') {
-			Game.getInstance().player.sprite.setState('standRight');
+		this.updatePressed(event);
+		this.checkForState(event);
+
+ 		// Keyup
+		if(event.key == "ArrowRight" && event.type == 'keyup' && Game.getInstance().player.sprite.currentState.name == 'walkRight') {
+			if (!this.checkForState(event)) { Game.getInstance().player.sprite.setState('standRight'); }
 		} else if(event.key == "ArrowLeft" && event.type == 'keyup' && Game.getInstance().player.sprite.currentState.name == 'walkLeft') {
-			Game.getInstance().player.sprite.setState('standLeft');
+			if (!this.checkForState(event)) { Game.getInstance().player.sprite.setState('standLeft'); }
 		} else if(event.key == "ArrowUp" && event.type == 'keyup' && Game.getInstance().player.sprite.currentState.name == 'walkUp') {
-			Game.getInstance().player.sprite.setState('standUp');
+			if (!this.checkForState(event)) { Game.getInstance().player.sprite.setState('standUp'); }
 		} else if(event.key == "ArrowDown" && event.type == 'keyup' && Game.getInstance().player.sprite.currentState.name == 'walkDown') {
-			Game.getInstance().player.sprite.setState('standDown');
+			if (!this.checkForState(event)) { Game.getInstance().player.sprite.setState('standDown'); }
 		}
+	}
 
+	updatePressed(event: any) {
+		if (event.key == "ArrowDown" && event.type == 'keyup') { this.DownPressed = false; }
+		if (event.key == "ArrowUp" && event.type == 'keyup') { this.UpPressed = false; }
+		if (event.key == "ArrowLeft" && event.type == 'keyup') { this.LeftPressed = false; }
+		if (event.key == "ArrowLeft" && event.type == 'keyup') { this.LeftPressed = false; }
+		if (event.key == "ArrowRight" && event.type == 'keyup') { this.RightPressed = false; }
+		
+		if (event.key == "ArrowDown" && event.type == 'keydown') { this.DownPressed = true; }
+		if (event.key == "ArrowUp" && event.type == 'keydown') { this.UpPressed = true; }
+		if (event.key == "ArrowLeft" && event.type == 'keydown') { this.LeftPressed = true; }
+		if (event.key == "ArrowLeft" && event.type == 'keydown') { this.LeftPressed = true; }
+		if (event.key == "ArrowRight" && event.type == 'keydown') { this.RightPressed = true; }
 
+	}
+
+	checkForState(event) {
+		// Movement
+		if(this.DownPressed && Game.getInstance().player.sprite.currentState.name != 'walkDown') {
+			Game.getInstance().player.sprite.setState('walkDown');
+			return true;
+		} else if(this.UpPressed && Game.getInstance().player.sprite.currentState.name != 'walkUp') {
+			Game.getInstance().player.sprite.setState('walkUp');
+			return true;
+		} else if(this.LeftPressed && Game.getInstance().player.sprite.currentState.name != 'walkLeft') {
+			Game.getInstance().player.sprite.setState('walkLeft');
+			return true;
+		} else if(this.RightPressed && Game.getInstance().player.sprite.currentState.name != 'walkRight') {
+			Game.getInstance().player.sprite.setState('walkRight');
+			return true;
+		}
+		return false;
 	}
 }
 
+class Door {
+	image: any;
+	state: number = 0;
+	x: number = 0;
+	y: number = 0;
+	constructor(x, y) {
+		this.x = x*32;
+		this.y = y*32;
+		this.image = new Image();
+		this.image.src = "images/door.png";
+	}
+}
 class Level {
 	image: any;
 	layer2: any;
@@ -189,8 +256,14 @@ class Level {
 	tilesX: number;
 	tilesY: number;
 	collision: any[][];
+	doorUp: Door;
+	doorLeft: Door;
+	doorRight: Door;
 
 	constructor(tileWidth, tileHeight, tilesX, tilesY) {
+		this.doorUp = new Door(16, 4);
+		this.doorLeft = new Door(6, 19);
+		this.doorRight = new Door(25, 19);
 		this.image = new Image();
 		this.image.src = "images/lab.png";
 		this.layer2 = new Image();
@@ -232,12 +305,36 @@ class Level {
 			0,
 			0
 		);
+		Game.getInstance().context.drawImage(
+			this.doorUp.image,
+			this.doorUp.state * 32, 0,
+			32,32,
+			this.doorUp.x,
+			this.doorUp.y,
+			32,32
+		);
 	}
 	renderLayer() {
 		Game.getInstance().context.drawImage(
 			this.layer2,
 			0,
 			0
+		);
+		Game.getInstance().context.drawImage(
+			this.doorLeft.image,
+			this.doorLeft.state * 32, 0,
+			32,32,
+			this.doorLeft.x,
+			this.doorLeft.y,
+			32,32
+		);
+		Game.getInstance().context.drawImage(
+			this.doorRight.image,
+			this.doorRight.state * 32, 0,
+			32,32,
+			this.doorRight.x,
+			this.doorRight.y,
+			32,32
 		);	
 	}
 	checkCollision(grid) {
@@ -267,6 +364,7 @@ class Game {
 	deltaTime: number;
 	controls: Controls;
 	level: Level;
+	zombiepirates: ZombiePirate[] = [];
 
 	constructor(context) {
 		this.context = context;
@@ -292,9 +390,11 @@ class Game {
     start() {
         this.level = new Level(32, 32, 32, 24);
 		this.player = new Player();
+		this.zombiepirates.push(new ZombiePirate());
         this.controls = new Controls();
-        document.addEventListener("keydown", this.controls.update);
-        document.addEventListener("keyup", this.controls.update);
+
+        document.addEventListener("keydown", (event) => Game.getInstance().controls.update(event));
+        document.addEventListener("keyup", (event) => Game.getInstance().controls.update(event));
 		this.update();
     }
     
@@ -307,6 +407,11 @@ class Game {
 
 		this.level.render();
 		this.player.sprite.render();
+
+		this.zombiepirates.forEach(pirate => {
+			pirate.sprite.render();
+		});
+
 		this.level.renderLayer();
 		//this.level.debug();
 		requestAnimationFrame(this.update);

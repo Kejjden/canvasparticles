@@ -1,3 +1,27 @@
+var ZombiePirate = (function () {
+    function ZombiePirate() {
+        this.health = 10;
+        this.walkspeed = 2;
+        // Set Sprite
+        var image = new Image();
+        image.src = "images/zombie-pirate.png";
+        this.sprite = new Sprite(32, 48, image);
+        this.sprite.x = 4 * 32;
+        this.sprite.y = 4 * 32;
+        this.sprite.setGrids();
+        // Set AnimationStates for Sprite
+        this.sprite.addState(new AnimationState("walkDown", [[1, 1], [1, 2], [1, 3]]));
+        this.sprite.addState(new AnimationState("walkLeft", [[2, 1], [2, 2], [2, 3]]));
+        this.sprite.addState(new AnimationState("walkRight", [[3, 1], [3, 2], [3, 3]]));
+        this.sprite.addState(new AnimationState("walkUp", [[4, 1], [4, 2], [4, 3]]));
+        this.sprite.addState(new AnimationState("standDown", [[1, 2]]));
+        this.sprite.addState(new AnimationState("standLeft", [[2, 2]]));
+        this.sprite.addState(new AnimationState("standRight", [[3, 2]]));
+        this.sprite.addState(new AnimationState("standUp", [[4, 2]]));
+        this.sprite.setState("standDown");
+    }
+    return ZombiePirate;
+})();
 var Player = (function () {
     function Player() {
         this.health = 100;
@@ -136,38 +160,107 @@ var Sprite = (function () {
 })();
 var Controls = (function () {
     function Controls() {
+        this.UpPressed = false;
+        this.LeftPressed = false;
+        this.DownPressed = false;
+        this.RightPressed = false;
     }
     Controls.prototype.update = function (event) {
-        // Movement
-        if (event.key == "ArrowDown" && event.type == 'keydown' && Game.getInstance().player.sprite.currentState.name != 'walkDown') {
-            Game.getInstance().player.sprite.setState('walkDown');
-        }
-        else if (event.key == "ArrowUp" && event.type == 'keydown' && Game.getInstance().player.sprite.currentState.name != 'walkUp') {
-            Game.getInstance().player.sprite.setState('walkUp');
-        }
-        else if (event.key == "ArrowLeft" && event.type == 'keydown' && Game.getInstance().player.sprite.currentState.name != 'walkLeft') {
-            Game.getInstance().player.sprite.setState('walkLeft');
-        }
-        else if (event.key == "ArrowRight" && event.type == 'keydown' && Game.getInstance().player.sprite.currentState.name != 'walkRight') {
-            Game.getInstance().player.sprite.setState('walkRight');
-        } // Keyup
-        else if (event.key == "ArrowRight" && event.type == 'keyup' && Game.getInstance().player.sprite.currentState.name == 'walkRight') {
-            Game.getInstance().player.sprite.setState('standRight');
+        this.updatePressed(event);
+        this.checkForState(event);
+        // Keyup
+        if (event.key == "ArrowRight" && event.type == 'keyup' && Game.getInstance().player.sprite.currentState.name == 'walkRight') {
+            if (!this.checkForState(event)) {
+                Game.getInstance().player.sprite.setState('standRight');
+            }
         }
         else if (event.key == "ArrowLeft" && event.type == 'keyup' && Game.getInstance().player.sprite.currentState.name == 'walkLeft') {
-            Game.getInstance().player.sprite.setState('standLeft');
+            if (!this.checkForState(event)) {
+                Game.getInstance().player.sprite.setState('standLeft');
+            }
         }
         else if (event.key == "ArrowUp" && event.type == 'keyup' && Game.getInstance().player.sprite.currentState.name == 'walkUp') {
-            Game.getInstance().player.sprite.setState('standUp');
+            if (!this.checkForState(event)) {
+                Game.getInstance().player.sprite.setState('standUp');
+            }
         }
         else if (event.key == "ArrowDown" && event.type == 'keyup' && Game.getInstance().player.sprite.currentState.name == 'walkDown') {
-            Game.getInstance().player.sprite.setState('standDown');
+            if (!this.checkForState(event)) {
+                Game.getInstance().player.sprite.setState('standDown');
+            }
         }
+    };
+    Controls.prototype.updatePressed = function (event) {
+        if (event.key == "ArrowDown" && event.type == 'keyup') {
+            this.DownPressed = false;
+        }
+        if (event.key == "ArrowUp" && event.type == 'keyup') {
+            this.UpPressed = false;
+        }
+        if (event.key == "ArrowLeft" && event.type == 'keyup') {
+            this.LeftPressed = false;
+        }
+        if (event.key == "ArrowLeft" && event.type == 'keyup') {
+            this.LeftPressed = false;
+        }
+        if (event.key == "ArrowRight" && event.type == 'keyup') {
+            this.RightPressed = false;
+        }
+        if (event.key == "ArrowDown" && event.type == 'keydown') {
+            this.DownPressed = true;
+        }
+        if (event.key == "ArrowUp" && event.type == 'keydown') {
+            this.UpPressed = true;
+        }
+        if (event.key == "ArrowLeft" && event.type == 'keydown') {
+            this.LeftPressed = true;
+        }
+        if (event.key == "ArrowLeft" && event.type == 'keydown') {
+            this.LeftPressed = true;
+        }
+        if (event.key == "ArrowRight" && event.type == 'keydown') {
+            this.RightPressed = true;
+        }
+    };
+    Controls.prototype.checkForState = function (event) {
+        // Movement
+        if (this.DownPressed && Game.getInstance().player.sprite.currentState.name != 'walkDown') {
+            Game.getInstance().player.sprite.setState('walkDown');
+            return true;
+        }
+        else if (this.UpPressed && Game.getInstance().player.sprite.currentState.name != 'walkUp') {
+            Game.getInstance().player.sprite.setState('walkUp');
+            return true;
+        }
+        else if (this.LeftPressed && Game.getInstance().player.sprite.currentState.name != 'walkLeft') {
+            Game.getInstance().player.sprite.setState('walkLeft');
+            return true;
+        }
+        else if (this.RightPressed && Game.getInstance().player.sprite.currentState.name != 'walkRight') {
+            Game.getInstance().player.sprite.setState('walkRight');
+            return true;
+        }
+        return false;
     };
     return Controls;
 })();
+var Door = (function () {
+    function Door(x, y) {
+        this.state = 0;
+        this.x = 0;
+        this.y = 0;
+        this.x = x * 32;
+        this.y = y * 32;
+        this.image = new Image();
+        this.image.src = "images/door.png";
+    }
+    return Door;
+})();
 var Level = (function () {
     function Level(tileWidth, tileHeight, tilesX, tilesY) {
+        this.doorUp = new Door(16, 4);
+        this.doorLeft = new Door(6, 19);
+        this.doorRight = new Door(25, 19);
         this.image = new Image();
         this.image.src = "images/lab.png";
         this.layer2 = new Image();
@@ -205,9 +298,12 @@ var Level = (function () {
     }
     Level.prototype.render = function () {
         Game.getInstance().context.drawImage(this.image, 0, 0);
+        Game.getInstance().context.drawImage(this.doorUp.image, this.doorUp.state * 32, 0, 32, 32, this.doorUp.x, this.doorUp.y, 32, 32);
     };
     Level.prototype.renderLayer = function () {
         Game.getInstance().context.drawImage(this.layer2, 0, 0);
+        Game.getInstance().context.drawImage(this.doorLeft.image, this.doorLeft.state * 32, 0, 32, 32, this.doorLeft.x, this.doorLeft.y, 32, 32);
+        Game.getInstance().context.drawImage(this.doorRight.image, this.doorRight.state * 32, 0, 32, 32, this.doorRight.x, this.doorRight.y, 32, 32);
     };
     Level.prototype.checkCollision = function (grid) {
         var gridType = this.collision[grid[1] + 1][grid[0] + 1];
@@ -230,6 +326,7 @@ var Level = (function () {
 var Game = (function () {
     function Game(context) {
         var _this = this;
+        this.zombiepirates = [];
         this.update = function () {
             var now = Date.now();
             _this.deltaTime = (now - _this.lastDeltaUpdate) / 1000;
@@ -239,6 +336,9 @@ var Game = (function () {
             _this.player.update();
             _this.level.render();
             _this.player.sprite.render();
+            _this.zombiepirates.forEach(function (pirate) {
+                pirate.sprite.render();
+            });
             _this.level.renderLayer();
             //this.level.debug();
             requestAnimationFrame(_this.update);
@@ -259,9 +359,10 @@ var Game = (function () {
     Game.prototype.start = function () {
         this.level = new Level(32, 32, 32, 24);
         this.player = new Player();
+        this.zombiepirates.push(new ZombiePirate());
         this.controls = new Controls();
-        document.addEventListener("keydown", this.controls.update);
-        document.addEventListener("keyup", this.controls.update);
+        document.addEventListener("keydown", function (event) { return Game.getInstance().controls.update(event); });
+        document.addEventListener("keyup", function (event) { return Game.getInstance().controls.update(event); });
         this.update();
     };
     return Game;
