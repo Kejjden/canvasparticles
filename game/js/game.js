@@ -46,14 +46,13 @@ var ZombiePirate = (function () {
         }
         // Random the first way
         firstX = !!Math.floor(Math.random() * 2);
-        firstX = true;
+        //firstX = false;
         if (leftOfTarget && aboveTarget) {
             if (firstX) {
                 var nextGrid = [currentGrid[0] + 1, currentGrid[1]];
                 for (var xLoop = 1; xLoop <= 3; xLoop++) {
                     if (Game.getInstance().level.collision[nextGrid[0]][nextGrid[1]] == 2) {
                         this.path.push([nextGrid[0], nextGrid[1]]);
-                        //l(nextGrid);
                         nextGrid = [nextGrid[0] + 1, nextGrid[1]];
                     }
                     else {
@@ -64,17 +63,35 @@ var ZombiePirate = (function () {
                 for (var yLoop = 1; yLoop <= 3; yLoop++) {
                     if (Game.getInstance().level.collision[nextGrid[0]][nextGrid[1] - 1] == 2) {
                         this.path.push([nextGrid[0], nextGrid[1]]);
-                        //l('Free space');
-                        //l(nextGrid);
                         nextGrid = [nextGrid[0], nextGrid[1] + 1];
                     }
                     else {
                         this.path.push([nextGrid[0], nextGrid[1]]);
                     }
                 }
-            } /*else {
-
-            }*/
+            }
+            else {
+                var nextGrid = [currentGrid[0], currentGrid[1] + 1];
+                for (var yLoop = 1; yLoop <= 3; yLoop++) {
+                    if (Game.getInstance().level.collision[nextGrid[0]][nextGrid[1] - 2] == 2) {
+                        this.path.push([nextGrid[0], nextGrid[1]]);
+                        nextGrid = [nextGrid[0], nextGrid[1] + 1];
+                    }
+                    else {
+                        this.path.push([nextGrid[0], nextGrid[1]]);
+                    }
+                }
+                nextGrid = [nextGrid[0], nextGrid[1] - 1];
+                for (var xLoop = 1; xLoop <= 3; xLoop++) {
+                    if (Game.getInstance().level.collision[nextGrid[0] + 2][nextGrid[1]] == 2) {
+                        this.path.push([nextGrid[0], nextGrid[1]]);
+                        nextGrid = [nextGrid[0] + 1, nextGrid[1]];
+                    }
+                    else {
+                        this.path.push([nextGrid[0] - 1, nextGrid[1]]);
+                    }
+                }
+            }
         }
         else if (leftOfTarget && !aboveTarget) {
         }
@@ -92,12 +109,22 @@ var ZombiePirate = (function () {
             if (current[0] < target[0]) {
                 this.sprite.x += 1;
             }
+            if (current[0] > target[0]) {
+                this.sprite.x -= 1;
+            }
             if (current[1] < target[1]) {
                 this.sprite.y += 1;
             }
-            if (current[0] == target[0]) {
+            if (current[1] > target[1]) {
+                this.sprite.y -= 1;
+            }
+            if (current[0] == target[0] && current[1] == target[1]) {
                 l('new target');
                 this.pathIndex++;
+                if (this.pathIndex == 6) {
+                    this.updatePath();
+                    this.pathIndex = 0;
+                }
             }
             //l([this.path[this.pathIndex][0] * 32, this.path[this.pathIndex][1] * 32]);
             //this.sprite.x = this.path[this.pathIndex][0] * 32;
