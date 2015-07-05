@@ -89,16 +89,15 @@ var ZombiePirate = (function () {
             //l('tick');
             var current = this.sprite.getGrids();
             var target = [this.path[this.pathIndex][0], this.path[this.pathIndex][1]];
-            if (current[0] <= target[0]) {
+            if (current[0] < target[0]) {
                 this.sprite.x += 1;
-                //var dummy: any = this.sprite.getGridsFor(this.sprite.x - 16, this.sprite.y);
-                if (current[0] == target[0]) {
-                    l('new target');
-                    this.pathIndex++;
-                }
             }
             if (current[1] < target[1]) {
                 this.sprite.y += 1;
+            }
+            if (current[0] == target[0]) {
+                l('new target');
+                this.pathIndex++;
             }
             //l([this.path[this.pathIndex][0] * 32, this.path[this.pathIndex][1] * 32]);
             //this.sprite.x = this.path[this.pathIndex][0] * 32;
