@@ -2,6 +2,9 @@ class ZombiePirate {
 	sprite: Sprite;
 	health: number = 10;
 	walkspeed: number = 2;
+	pathTick: number = 0;
+	pathIndex: number = 0;
+	path: any[] = [];
 	constructor() {
 		// Set Sprite
 		var image : any = new Image();
@@ -20,7 +23,105 @@ class ZombiePirate {
 		this.sprite.addState(new AnimationState("standLeft", [[2,2]]));
 		this.sprite.addState(new AnimationState("standRight",[[3,2]]));
 		this.sprite.addState(new AnimationState("standUp",	 [[4,2]]));
-		this.sprite.setState("standDown");
+		this.sprite.setState("walkDown");
+		this.updatePath();
+	}
+
+	updatePath() {
+		this.path = [];
+		var targetGrid: any = this.sprite.getGridsFor(Game.getInstance().player.sprite.x, Game.getInstance().player.sprite.y);
+		var currentGrid: any = this.sprite.getGridsFor(this.sprite.x, this.sprite.y);
+		var leftOfTarget: boolean = false;
+		var aboveTarget: boolean = false;
+		var firstX: boolean = false;
+		//l('Current');
+		//l(currentGrid);
+		//l('Target');
+		//l(targetGrid);
+		//l('Path');
+		// Start with X
+		if (currentGrid[0] < targetGrid[0]) { leftOfTarget = true; }
+		// Now Y
+		if (currentGrid[1] < targetGrid[1]) { aboveTarget = true; }
+		// Random the first way
+		firstX = !!Math.floor(Math.random() * 2);
+		firstX = true;
+
+		if(leftOfTarget && aboveTarget) {
+			if(firstX) {
+				var nextGrid: any[] = [currentGrid[0] + 1, currentGrid[1]];
+				for (var xLoop = 1; xLoop <= 3; xLoop++) {
+					if(Game.getInstance().level.collision[nextGrid[0]][nextGrid[1]] == 2) {
+						this.path.push([nextGrid[0], nextGrid[1]]);
+						//l(nextGrid);
+						nextGrid = [nextGrid[0] + 1, nextGrid[1]];
+					} else {
+						this.path.push([nextGrid[0] - 1, nextGrid[1]]);
+						//l([nextGrid[0] - 1, nextGrid[1]]);
+					}
+				}
+				nextGrid = [nextGrid[0], nextGrid[1]];
+				for (var yLoop = 1; yLoop <= 3; yLoop++) {
+					if(Game.getInstance().level.collision[nextGrid[0]][nextGrid[1] - 1] == 2) {
+						this.path.push([nextGrid[0], nextGrid[1]]);
+						//l('Free space');
+						//l(nextGrid);
+						nextGrid = [nextGrid[0], nextGrid[1] + 1];
+					} else {
+						this.path.push([nextGrid[0], nextGrid[1]]);
+						//l('Blocked');
+						//l([nextGrid[0], nextGrid[1]]);
+					}
+				}
+			} /*else {
+
+			}*/
+		} else if (leftOfTarget && !aboveTarget) {
+
+		} else if (!leftOfTarget && aboveTarget) {
+			
+		} else if (!leftOfTarget && !aboveTarget) {
+			
+		}
+
+		
+	}
+
+	update() {
+		//l('update');
+		if(this.pathTick%2 == 0 && this.pathIndex < 6) {
+			//l('tick');
+			var current: any = this.sprite.getGrids();
+			var target: any = [this.path[this.pathIndex][0], this.path[this.pathIndex][1]];
+
+
+			if (current[0] <= target[0]) { 
+				this.sprite.x += 1; 
+				//var dummy: any = this.sprite.getGridsFor(this.sprite.x - 16, this.sprite.y);
+
+				if (current[0] == target[0]) {
+					l('new target');
+					this.pathIndex++;		
+				}
+			}
+			if (current[1] < target[1]) { this.sprite.y += 1; }
+
+
+			//l([this.path[this.pathIndex][0] * 32, this.path[this.pathIndex][1] * 32]);
+			//this.sprite.x = this.path[this.pathIndex][0] * 32;
+			//this.sprite.y = this.path[this.pathIndex][1] * 32;
+			//l('After');
+			//l([this.sprite.x / 32, this.sprite.y / 32]);
+			//this.pathIndex++;
+			//this.currentState.nextFrame();
+			this.pathTick = 0;
+
+        }
+        this.pathTick++;
+        this.sprite.update();
+	}
+	render() {
+
 	}
 }
 class Player {
@@ -134,6 +235,9 @@ class Sprite {
 	setGrids() {
 		this.gridX = Math.floor(this.x / Game.getInstance().level.tileWidth);
 		this.gridY = Math.floor(this.y / Game.getInstance().level.tileHeight);
+	}
+	getGrids() {
+		return this.getGridsFor(this.x, this.y);
 	}
 	getGridsFor(x,y) {
 		return [
@@ -408,7 +512,8 @@ class Game {
 		this.level.render();
 		this.player.sprite.render();
 
-		this.zombiepirates.forEach(pirate => {
+		this.zombiepirates.forEach(pirate  => {
+			pirate.update();
 			pirate.sprite.render();
 		});
 

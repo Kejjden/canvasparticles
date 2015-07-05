@@ -2,6 +2,9 @@ var ZombiePirate = (function () {
     function ZombiePirate() {
         this.health = 10;
         this.walkspeed = 2;
+        this.pathTick = 0;
+        this.pathIndex = 0;
+        this.path = [];
         // Set Sprite
         var image = new Image();
         image.src = "images/zombie-pirate.png";
@@ -18,8 +21,99 @@ var ZombiePirate = (function () {
         this.sprite.addState(new AnimationState("standLeft", [[2, 2]]));
         this.sprite.addState(new AnimationState("standRight", [[3, 2]]));
         this.sprite.addState(new AnimationState("standUp", [[4, 2]]));
-        this.sprite.setState("standDown");
+        this.sprite.setState("walkDown");
+        this.updatePath();
     }
+    ZombiePirate.prototype.updatePath = function () {
+        this.path = [];
+        var targetGrid = this.sprite.getGridsFor(Game.getInstance().player.sprite.x, Game.getInstance().player.sprite.y);
+        var currentGrid = this.sprite.getGridsFor(this.sprite.x, this.sprite.y);
+        var leftOfTarget = false;
+        var aboveTarget = false;
+        var firstX = false;
+        //l('Current');
+        //l(currentGrid);
+        //l('Target');
+        //l(targetGrid);
+        //l('Path');
+        // Start with X
+        if (currentGrid[0] < targetGrid[0]) {
+            leftOfTarget = true;
+        }
+        // Now Y
+        if (currentGrid[1] < targetGrid[1]) {
+            aboveTarget = true;
+        }
+        // Random the first way
+        firstX = !!Math.floor(Math.random() * 2);
+        firstX = true;
+        if (leftOfTarget && aboveTarget) {
+            if (firstX) {
+                var nextGrid = [currentGrid[0] + 1, currentGrid[1]];
+                for (var xLoop = 1; xLoop <= 3; xLoop++) {
+                    if (Game.getInstance().level.collision[nextGrid[0]][nextGrid[1]] == 2) {
+                        this.path.push([nextGrid[0], nextGrid[1]]);
+                        //l(nextGrid);
+                        nextGrid = [nextGrid[0] + 1, nextGrid[1]];
+                    }
+                    else {
+                        this.path.push([nextGrid[0] - 1, nextGrid[1]]);
+                    }
+                }
+                nextGrid = [nextGrid[0], nextGrid[1]];
+                for (var yLoop = 1; yLoop <= 3; yLoop++) {
+                    if (Game.getInstance().level.collision[nextGrid[0]][nextGrid[1] - 1] == 2) {
+                        this.path.push([nextGrid[0], nextGrid[1]]);
+                        //l('Free space');
+                        //l(nextGrid);
+                        nextGrid = [nextGrid[0], nextGrid[1] + 1];
+                    }
+                    else {
+                        this.path.push([nextGrid[0], nextGrid[1]]);
+                    }
+                }
+            } /*else {
+
+            }*/
+        }
+        else if (leftOfTarget && !aboveTarget) {
+        }
+        else if (!leftOfTarget && aboveTarget) {
+        }
+        else if (!leftOfTarget && !aboveTarget) {
+        }
+    };
+    ZombiePirate.prototype.update = function () {
+        //l('update');
+        if (this.pathTick % 2 == 0 && this.pathIndex < 6) {
+            //l('tick');
+            var current = this.sprite.getGrids();
+            var target = [this.path[this.pathIndex][0], this.path[this.pathIndex][1]];
+            if (current[0] <= target[0]) {
+                this.sprite.x += 1;
+                //var dummy: any = this.sprite.getGridsFor(this.sprite.x - 16, this.sprite.y);
+                if (current[0] == target[0]) {
+                    l('new target');
+                    this.pathIndex++;
+                }
+            }
+            if (current[1] < target[1]) {
+                this.sprite.y += 1;
+            }
+            //l([this.path[this.pathIndex][0] * 32, this.path[this.pathIndex][1] * 32]);
+            //this.sprite.x = this.path[this.pathIndex][0] * 32;
+            //this.sprite.y = this.path[this.pathIndex][1] * 32;
+            //l('After');
+            //l([this.sprite.x / 32, this.sprite.y / 32]);
+            //this.pathIndex++;
+            //this.currentState.nextFrame();
+            this.pathTick = 0;
+        }
+        this.pathTick++;
+        this.sprite.update();
+    };
+    ZombiePirate.prototype.render = function () {
+    };
     return ZombiePirate;
 })();
 var Player = (function () {
@@ -125,6 +219,9 @@ var Sprite = (function () {
     Sprite.prototype.setGrids = function () {
         this.gridX = Math.floor(this.x / Game.getInstance().level.tileWidth);
         this.gridY = Math.floor(this.y / Game.getInstance().level.tileHeight);
+    };
+    Sprite.prototype.getGrids = function () {
+        return this.getGridsFor(this.x, this.y);
     };
     Sprite.prototype.getGridsFor = function (x, y) {
         return [
@@ -337,6 +434,7 @@ var Game = (function () {
             _this.level.render();
             _this.player.sprite.render();
             _this.zombiepirates.forEach(function (pirate) {
+                pirate.update();
                 pirate.sprite.render();
             });
             _this.level.renderLayer();
