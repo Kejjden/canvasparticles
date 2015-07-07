@@ -56,8 +56,6 @@ var ZombiePirate = (function () {
             if (current[0] == target[0] && current[1] == target[1] && this.sprite.x % 32 == 0 && this.sprite.y % 32 == 0) {
                 this.pathIndex++;
                 if (this.pathIndex == this.pathSize) {
-                    this.updatePath();
-                    this.pathIndex = 0;
                 }
             }
             //l([this.path[this.pathIndex][0] * 32, this.path[this.pathIndex][1] * 32]);
