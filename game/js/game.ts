@@ -1,17 +1,28 @@
+/// <reference path="ref.ts" />
+
 class ZombiePirate {
 	sprite: Sprite;
+
 	health: number = 10;
 	walkspeed: number = 2;
 	pathTick: number = 0;
 	pathIndex: number = 0;
 	path: any[] = [];
+	pathSize: number = 0;
+	pathFinder: Pathfinder;
+	debugimage: any;
 	constructor() {
 		// Set Sprite
 		var image : any = new Image();
 		image.src = "images/zombie-pirate.png";
+
+		this.debugimage = new Image();
+		this.debugimage.src = "images/grid-green.png";
+
+
 		this.sprite = new Sprite(32, 48, image);
-		this.sprite.x = 4 * 32;
-		this.sprite.y = 4 * 32;
+		this.sprite.x = 9 * 32;
+		this.sprite.y = 14 * 32;
 		this.sprite.setGrids();
 		// Set AnimationStates for Sprite
 		this.sprite.addState(new AnimationState("walkDown", [[1,1],[1,2],[1,3]]));
@@ -24,109 +35,47 @@ class ZombiePirate {
 		this.sprite.addState(new AnimationState("standRight",[[3,2]]));
 		this.sprite.addState(new AnimationState("standUp",	 [[4,2]]));
 		this.sprite.setState("walkDown");
+		this.pathFinder = new Pathfinder();
 		this.updatePath();
 	}
 
 	updatePath() {
-		this.path = [];
+		
 		var targetGrid: any = this.sprite.getGridsFor(Game.getInstance().player.sprite.x, Game.getInstance().player.sprite.y);
 		var currentGrid: any = this.sprite.getGridsFor(this.sprite.x, this.sprite.y);
-		var leftOfTarget: boolean = false;
-		var aboveTarget: boolean = false;
-		var firstX: boolean = false;
-		//l('Current');
-		//l(currentGrid);
-		//l('Target');
-		//l(targetGrid);
-		//l('Path');
-		// Start with X
-		if (currentGrid[0] < targetGrid[0]) { leftOfTarget = true; }
-		// Now Y
-		if (currentGrid[1] < targetGrid[1]) { aboveTarget = true; }
-		// Random the first way
-		firstX = !!Math.floor(Math.random() * 2);
-		//firstX = false;
-
-		if(leftOfTarget && aboveTarget) {
-			if(firstX) {
-				var nextGrid: any[] = [currentGrid[0] + 1, currentGrid[1]];
-				for (var xLoop = 1; xLoop <= 3; xLoop++) {
-					if(Game.getInstance().level.collision[nextGrid[0]][nextGrid[1]] == 2) {
-						this.path.push([nextGrid[0], nextGrid[1]]);
-						nextGrid = [nextGrid[0] + 1, nextGrid[1]];
-					} else {
-						this.path.push([nextGrid[0] - 1, nextGrid[1]]);
-					}
-				}
-				nextGrid = [nextGrid[0], nextGrid[1]];
-				for (var yLoop = 1; yLoop <= 3; yLoop++) {
-					if(Game.getInstance().level.collision[nextGrid[0]][nextGrid[1] - 1] == 2) {
-						this.path.push([nextGrid[0], nextGrid[1]]);
-						nextGrid = [nextGrid[0], nextGrid[1] + 1];
-					} else {
-						this.path.push([nextGrid[0], nextGrid[1]]);
-					}
-				}
-			} else {
-				var nextGrid: any[] = [currentGrid[0], currentGrid[1]+1];
-				for (var yLoop = 1; yLoop <= 3; yLoop++) {
-					if(Game.getInstance().level.collision[nextGrid[0]][nextGrid[1] - 2] == 2) {
-						this.path.push([nextGrid[0], nextGrid[1]]);
-						nextGrid = [nextGrid[0], nextGrid[1] + 1];
-					} else {
-						this.path.push([nextGrid[0], nextGrid[1]]);
-					}
-				}
-				nextGrid = [nextGrid[0], nextGrid[1] - 1];
-				for (var xLoop = 1; xLoop <= 3; xLoop++) {
-					if(Game.getInstance().level.collision[nextGrid[0] + 2][nextGrid[1]] == 2) {
-						this.path.push([nextGrid[0], nextGrid[1]]);
-						nextGrid = [nextGrid[0] + 1, nextGrid[1]];
-					} else {
-						this.path.push([nextGrid[0] - 1, nextGrid[1]]);
-					}
-				}
-			}
-		} else if (leftOfTarget && !aboveTarget) {
-
-		} else if (!leftOfTarget && aboveTarget) {
-			
-		} else if (!leftOfTarget && !aboveTarget) {
-			
-		}
-
+		this.path = this.pathFinder.getPath(currentGrid, targetGrid);
+		this.pathSize = this.path.length;
 		
 	}
 
 	update() {
 		//l('update');
-		if(this.pathTick%2 == 0 && this.pathIndex < 6) {
+		if(this.pathTick%2 == 0 && this.pathIndex < this.pathSize) {
 			//l('tick');
 			var current: any = this.sprite.getGrids();
 			var target: any = [this.path[this.pathIndex][0], this.path[this.pathIndex][1]];
 
 
-			if (current[0] < target[0]) { 
+			if (this.sprite.x < target[0] * 32) { 
 				this.sprite.x += 1; 
 			}
-			if (current[0] > target[0]) { 
+			if (this.sprite.x > target[0] * 32) { 
 				this.sprite.x -= 1; 
 			}
-			if (current[1] < target[1]) { 
+			if (this.sprite.y < target[1] * 32) { 
 				this.sprite.y += 1; 
 			}
-			if (current[1] > target[1]) { 
-				this.sprite.y -= 1; 
+			if (this.sprite.y > target[1] * 32) { 
+				this.sprite.y -= 1;
 			}
-			if (current[0] == target[0] && current[1] == target[1]) {
-				l('new target');
+			if (current[0] == target[0] && current[1] == target[1] && this.sprite.x%32 == 0 && this.sprite.y%32 == 0) {
 				this.pathIndex++;
-				if(this.pathIndex == 6) {
+				if(this.pathIndex == this.pathSize) {
 					this.updatePath();
 					this.pathIndex = 0;
 				}		 
 			}
-
+			
 
 			//l([this.path[this.pathIndex][0] * 32, this.path[this.pathIndex][1] * 32]);
 			//this.sprite.x = this.path[this.pathIndex][0] * 32;
@@ -142,7 +91,15 @@ class ZombiePirate {
         this.sprite.update();
 	}
 	render() {
-
+		this.path.forEach(pathgrid => { 
+			Game.getInstance().context.drawImage(
+				this.debugimage,
+				pathgrid[0] * 32,
+				pathgrid[1] * 32
+				
+		);
+		});
+		this.sprite.render();
 	}
 }
 class Player {
@@ -384,6 +341,7 @@ class Level {
 	doorUp: Door;
 	doorLeft: Door;
 	doorRight: Door;
+	debugimage: any;
 
 	constructor(tileWidth, tileHeight, tilesX, tilesY) {
 		this.doorUp = new Door(16, 4);
@@ -392,7 +350,9 @@ class Level {
 		this.image = new Image();
 		this.image.src = "images/lab.png";
 		this.layer2 = new Image();
-		this.layer2.src = "images/lab-layer-2.png";
+		this.layer2.src = "images/lab-layer-2.png";		
+		this.debugimage = new Image();
+		this.debugimage.src = "images/grid-red.png";
 		this.tileWidth = tileWidth;
 		this.tileHeight = tileHeight;
 		this.tilesX = tilesX;
@@ -472,9 +432,14 @@ class Level {
 	debug() {
 		for (var x = 0; x <= 31; x++) {         
 			for (var y = 0; y <= 23; y++) {         
-				Game.getInstance().context.fillStyle = "blue";
-				Game.getInstance().context.font = "bold 16px Arial";
-				Game.getInstance().context.fillText(this.collision[y][x], x*32, y*32);
+				if(this.collision[y][x] != 2) {
+					Game.getInstance().context.drawImage(
+						this.debugimage,
+						x * 32,
+						y * 32
+					);
+				}
+				//Game.getInstance().context.fillText(this.collision[y][x], x*32, y*32);
 				//l([x, y]);
         	}  
         }  
@@ -535,11 +500,11 @@ class Game {
 
 		this.zombiepirates.forEach(pirate  => {
 			pirate.update();
-			pirate.sprite.render();
+			pirate.render();
 		});
 
 		this.level.renderLayer();
-		//this.level.debug();
+		this.level.debug();
 		requestAnimationFrame(this.update);
 	}
 }
