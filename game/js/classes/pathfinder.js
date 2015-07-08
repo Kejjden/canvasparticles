@@ -75,7 +75,7 @@ var Pathfinder = (function () {
             var nextGrid = new Grid(currentGrid.x, currentGrid.y);
             l('yoko');
             l(nextGrid);
-            this.path.push(nextGrid);
+            this.path.push(new Grid(nextGrid.x, nextGrid.y));
             for (var xLoop = 1; xLoop <= 10; xLoop++) {
                 l(Game.getInstance().level.collision[nextGrid.x][nextGrid.y]);
                 if (Game.getInstance().level.collision[nextGrid.x][nextGrid.y] == 2) {
