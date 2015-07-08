@@ -15,10 +15,10 @@ var Pathfinder = (function () {
         var xModifier = 0;
         var yModifier = 0;
         this.path = [];
-        l('Current');
-        l(currentGrid);
-        l('Target');
-        l(targetGrid);
+        //l('Current');
+        //l(currentGrid);
+        //l('Target');
+        //l(targetGrid);
         //l('Path');
         // Start with X
         if (currentGrid.x < targetGrid.x) {
@@ -73,9 +73,6 @@ var Pathfinder = (function () {
         }
         if (firstX) {
             var nextGrid = new Grid(currentGrid.x, currentGrid.y);
-            l('yoko');
-            l(nextGrid);
-            this.path.push(new Grid(nextGrid.x, nextGrid.y));
             for (var xLoop = 1; xLoop <= 10; xLoop++) {
                 l(Game.getInstance().level.collision[nextGrid.x][nextGrid.y]);
                 if (Game.getInstance().level.collision[nextGrid.x][nextGrid.y] == 2) {
@@ -89,7 +86,7 @@ var Pathfinder = (function () {
             nextGrid.setXY(nextGrid.x - xModifier, nextGrid.y + yModifier);
             for (var yLoop = 1; yLoop <= 10; yLoop++) {
                 l(Game.getInstance().level.collision[nextGrid.x][nextGrid.y]);
-                if (Game.getInstance().level.collision[nextGrid.x][nextGrid.y] == 2) {
+                if (Game.getInstance().level.collision[nextGrid.x][nextGrid.y + 1] == 2) {
                     this.path.push(new Grid(nextGrid.x, nextGrid.y));
                     nextGrid.setXY(nextGrid.x, nextGrid.y + yModifier);
                 }

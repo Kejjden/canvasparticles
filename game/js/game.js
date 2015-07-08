@@ -33,11 +33,7 @@ var ZombiePirate = (function () {
         this.path = this.pathFinder.getPath(this.currentGrid, targetGrid);
         this.pathSize = this.path.length;
         this.pathIndex = 0;
-        l('this.path');
-        l(this.path);
         this.pathTargetGrid = new Grid(this.path[this.pathIndex].x, this.path[this.pathIndex].y);
-        l('this.pathTargetGrid');
-        l(this.pathTargetGrid);
     };
     ZombiePirate.prototype.update = function () {
         //l('update');
@@ -55,7 +51,12 @@ var ZombiePirate = (function () {
             if (this.sprite.y > this.pathTargetGrid.y * 32) {
                 this.sprite.y -= 1;
             }
-            if (this.currentGrid.x == this.pathTargetGrid.x && this.currentGrid.y == this.pathTargetGrid.y && this.sprite.x % 32 == 0 && this.sprite.y % 32 == 0) {
+            l('this.sprite.x');
+            l(this.sprite.x);
+            l('this.pathTargetGrid.x*32');
+            l(this.pathTargetGrid.x * 32);
+            if (this.sprite.x == this.pathTargetGrid.x * 32 && this.sprite.y == this.pathTargetGrid.y * 32 && this.sprite.x % 32 == 0 && this.sprite.y % 32 == 0) {
+                l('FLAP');
                 this.pathIndex++;
                 this.currentGrid = this.sprite.getGrids();
                 this.pathTargetGrid = new Grid(this.path[this.pathIndex].x, this.path[this.pathIndex].y);
@@ -352,7 +353,7 @@ var Level = (function () {
             [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 0, 0],
             [0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 0, 0],
             [0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 0, 0],
-            [0, 0, 0, 0, 1, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
+            [0, 0, 0, 0, 1, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 0, 0],
             [0, 0, 0, 0, 1, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
             [0, 0, 0, 0, 1, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
             [0, 0, 0, 0, 1, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
@@ -371,20 +372,6 @@ var Level = (function () {
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         ];
-        l('--start--');
-        l(this.collision[9][14]);
-        l(this.collision[10][14]);
-        l(this.collision[11][14]);
-        l(this.collision[12][14]);
-        l(this.collision[13][14]);
-        l(this.collision[14][14]);
-        l(this.collision[15][14]);
-        l(this.collision[16][14]);
-        l(this.collision[17][14]);
-        l(this.collision[18][14]);
-        l(this.collision[19][14]);
-        l(this.collision[20][14]);
-        l('--end--');
     }
     Level.prototype.render = function () {
         Game.getInstance().context.drawImage(this.image, 0, 0);
