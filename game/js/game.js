@@ -10,8 +10,6 @@ var ZombiePirate = (function () {
         // Set Sprite
         var image = new Image();
         image.src = "images/zombie-pirate.png";
-        this.debugimage = new Image();
-        this.debugimage.src = "images/grid-green.png";
         this.sprite = new Sprite(32, 48, image);
         this.sprite.x = 9 * 32;
         this.sprite.y = 14 * 32;
@@ -30,31 +28,37 @@ var ZombiePirate = (function () {
         this.updatePath();
     }
     ZombiePirate.prototype.updatePath = function () {
-        var targetGrid = this.sprite.getGridsFor(Game.getInstance().player.sprite.x, Game.getInstance().player.sprite.y);
-        var currentGrid = this.sprite.getGridsFor(this.sprite.x, this.sprite.y);
-        this.path = this.pathFinder.getPath(currentGrid, targetGrid);
+        var targetGrid = Game.getGridsFor(Game.getInstance().player.sprite.x, Game.getInstance().player.sprite.y);
+        this.currentGrid = Game.getGridsFor(this.sprite.x, this.sprite.y);
+        this.path = this.pathFinder.getPath(this.currentGrid, targetGrid);
         this.pathSize = this.path.length;
+        this.pathIndex = 0;
+        l('this.path');
+        l(this.path);
+        this.pathTargetGrid = new Grid(this.path[this.pathIndex].x, this.path[this.pathIndex].y);
+        l('this.pathTargetGrid');
+        l(this.pathTargetGrid);
     };
     ZombiePirate.prototype.update = function () {
         //l('update');
         if (this.pathTick % 2 == 0 && this.pathIndex < this.pathSize) {
             //l('tick');
-            var current = this.sprite.getGrids();
-            var target = [this.path[this.pathIndex][0], this.path[this.pathIndex][1]];
-            if (this.sprite.x < target[0] * 32) {
+            if (this.sprite.x < this.pathTargetGrid.x * 32) {
                 this.sprite.x += 1;
             }
-            if (this.sprite.x > target[0] * 32) {
+            if (this.sprite.x > this.pathTargetGrid.x * 32) {
                 this.sprite.x -= 1;
             }
-            if (this.sprite.y < target[1] * 32) {
+            if (this.sprite.y < this.pathTargetGrid.y * 32) {
                 this.sprite.y += 1;
             }
-            if (this.sprite.y > target[1] * 32) {
+            if (this.sprite.y > this.pathTargetGrid.y * 32) {
                 this.sprite.y -= 1;
             }
-            if (current[0] == target[0] && current[1] == target[1] && this.sprite.x % 32 == 0 && this.sprite.y % 32 == 0) {
+            if (this.currentGrid.x == this.pathTargetGrid.x && this.currentGrid.y == this.pathTargetGrid.y && this.sprite.x % 32 == 0 && this.sprite.y % 32 == 0) {
                 this.pathIndex++;
+                this.currentGrid = this.sprite.getGrids();
+                this.pathTargetGrid = new Grid(this.path[this.pathIndex].x, this.path[this.pathIndex].y);
                 if (this.pathIndex == this.pathSize) {
                 }
             }
@@ -71,13 +75,20 @@ var ZombiePirate = (function () {
         this.sprite.update();
     };
     ZombiePirate.prototype.render = function () {
-        var _this = this;
-        this.path.forEach(function (pathgrid) {
-            Game.getInstance().context.drawImage(_this.debugimage, pathgrid[0] * 32, pathgrid[1] * 32);
-        });
+        this.pathFinder.render();
         this.sprite.render();
     };
     return ZombiePirate;
+})();
+var Grid = (function () {
+    function Grid(x, y) {
+        this.setXY(x, y);
+    }
+    Grid.prototype.setXY = function (x, y) {
+        this.x = x;
+        this.y = y;
+    };
+    return Grid;
 })();
 var Player = (function () {
     function Player() {
@@ -118,28 +129,28 @@ var Player = (function () {
     };
     Player.prototype.walk = function (direction) {
         if (direction == 'down') {
-            var nextGrid = this.sprite.getGridsFor(this.sprite.x, this.sprite.y + this.walkspeed);
+            var nextGrid = Game.getGridsFor(this.sprite.x, this.sprite.y + this.walkspeed);
             var collided = Game.getInstance().level.checkCollision(nextGrid);
             if (!collided) {
                 this.sprite.y += this.walkspeed;
             }
         }
         else if (direction == 'up') {
-            var nextGrid = this.sprite.getGridsFor(this.sprite.x, this.sprite.y - this.walkspeed);
+            var nextGrid = Game.getGridsFor(this.sprite.x, this.sprite.y - this.walkspeed);
             var collided = Game.getInstance().level.checkCollision(nextGrid);
             if (!collided) {
                 this.sprite.y -= this.walkspeed;
             }
         }
         else if (direction == 'left') {
-            var nextGrid = this.sprite.getGridsFor(this.sprite.x - this.walkspeed, this.sprite.y);
+            var nextGrid = Game.getGridsFor(this.sprite.x - this.walkspeed, this.sprite.y);
             var collided = Game.getInstance().level.checkCollision(nextGrid);
             if (!collided) {
                 this.sprite.x -= this.walkspeed;
             }
         }
         else if (direction == 'right') {
-            var nextGrid = this.sprite.getGridsFor(this.sprite.x + this.walkspeed, this.sprite.y);
+            var nextGrid = Game.getGridsFor(this.sprite.x + this.walkspeed, this.sprite.y);
             var collided = Game.getInstance().level.checkCollision(nextGrid);
             if (!collided) {
                 this.sprite.x += this.walkspeed;
@@ -184,13 +195,7 @@ var Sprite = (function () {
         this.gridY = Math.floor(this.y / Game.getInstance().level.tileHeight);
     };
     Sprite.prototype.getGrids = function () {
-        return this.getGridsFor(this.x, this.y);
-    };
-    Sprite.prototype.getGridsFor = function (x, y) {
-        return [
-            Math.floor(x / Game.getInstance().level.tileWidth),
-            Math.floor(y / Game.getInstance().level.tileHeight)
-        ];
+        return Game.getGridsFor(this.x, this.y);
     };
     Sprite.prototype.addState = function (state) {
         this.states.push(state);
@@ -332,32 +337,54 @@ var Level = (function () {
         this.tilesX = tilesX;
         this.tilesY = tilesY;
         this.collision = [
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0],
-            [0, 0, 1, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 1, 0],
-            [0, 0, 1, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 1, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0],
-            [0, 0, 1, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 2, 2, 1, 0],
-            [0, 0, 1, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 2, 2, 1, 0],
-            [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
+            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
+            [0, 0, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0],
+            [0, 0, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0],
+            [0, 0, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0],
+            [0, 0, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0],
+            [0, 0, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 0, 0],
+            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 0, 0],
+            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 0, 0],
+            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 0, 0],
+            [0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 0, 0],
+            [0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 0, 0],
+            [0, 0, 0, 0, 1, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
+            [0, 0, 0, 0, 1, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
+            [0, 0, 0, 0, 1, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
+            [0, 0, 0, 0, 1, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
+            [0, 0, 0, 0, 1, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
+            [0, 0, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
+            [0, 0, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
+            [0, 0, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
+            [0, 0, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
+            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0],
+            [0, 0, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0],
+            [0, 0, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0],
+            [0, 0, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0],
+            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
+            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
+            [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         ];
+        l('--start--');
+        l(this.collision[9][14]);
+        l(this.collision[10][14]);
+        l(this.collision[11][14]);
+        l(this.collision[12][14]);
+        l(this.collision[13][14]);
+        l(this.collision[14][14]);
         l(this.collision[15][14]);
+        l(this.collision[16][14]);
+        l(this.collision[17][14]);
+        l(this.collision[18][14]);
+        l(this.collision[19][14]);
+        l(this.collision[20][14]);
+        l('--end--');
     }
     Level.prototype.render = function () {
         Game.getInstance().context.drawImage(this.image, 0, 0);
@@ -369,7 +396,7 @@ var Level = (function () {
         Game.getInstance().context.drawImage(this.doorRight.image, this.doorRight.state * 32, 0, 32, 32, this.doorRight.x, this.doorRight.y, 32, 32);
     };
     Level.prototype.checkCollision = function (grid) {
-        var gridType = this.collision[grid[1] + 1][grid[0] + 1];
+        var gridType = this.collision[grid.x + 1][grid.y + 1];
         if (gridType == 1) {
             return true;
         }
@@ -378,7 +405,7 @@ var Level = (function () {
     Level.prototype.debug = function () {
         for (var x = 0; x <= 31; x++) {
             for (var y = 0; y <= 23; y++) {
-                if (this.collision[y][x] != 2) {
+                if (this.collision[x][y] != 2) {
                     Game.getInstance().context.drawImage(this.debugimage, x * 32, y * 32);
                 }
             }
@@ -416,6 +443,9 @@ var Game = (function () {
     }
     Game.getInstance = function () {
         return Game.instance;
+    };
+    Game.getGridsFor = function (x, y) {
+        return new Grid(Math.floor(x / Game.getInstance().level.tileWidth), Math.floor(y / Game.getInstance().level.tileHeight));
     };
     Game.getDeltaTime = function () {
         return Game.getInstance().deltaTime;

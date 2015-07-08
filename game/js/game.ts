@@ -11,13 +11,13 @@ class ZombiePirate {
 	pathSize: number = 0;
 	pathFinder: Pathfinder;
 	debugimage: any;
+	currentGrid: Grid;
+	pathTargetGrid: Grid;
 	constructor() {
 		// Set Sprite
 		var image : any = new Image();
 		image.src = "images/zombie-pirate.png";
 
-		this.debugimage = new Image();
-		this.debugimage.src = "images/grid-green.png";
 
 
 		this.sprite = new Sprite(32, 48, image);
@@ -40,11 +40,16 @@ class ZombiePirate {
 	}
 
 	updatePath() {
-		
-		var targetGrid: any = this.sprite.getGridsFor(Game.getInstance().player.sprite.x, Game.getInstance().player.sprite.y);
-		var currentGrid: any = this.sprite.getGridsFor(this.sprite.x, this.sprite.y);
-		this.path = this.pathFinder.getPath(currentGrid, targetGrid);
+		var targetGrid: Grid = Game.getGridsFor(Game.getInstance().player.sprite.x, Game.getInstance().player.sprite.y);
+		this.currentGrid = Game.getGridsFor(this.sprite.x, this.sprite.y);
+		this.path = this.pathFinder.getPath(this.currentGrid, targetGrid);
 		this.pathSize = this.path.length;
+		this.pathIndex = 0;
+		l('this.path');
+		l(this.path);
+		this.pathTargetGrid = new Grid(this.path[this.pathIndex].x, this.path[this.pathIndex].y);
+		l('this.pathTargetGrid');
+		l(this.pathTargetGrid);
 		
 	}
 
@@ -52,24 +57,25 @@ class ZombiePirate {
 		//l('update');
 		if(this.pathTick%2 == 0 && this.pathIndex < this.pathSize) {
 			//l('tick');
-			var current: any = this.sprite.getGrids();
-			var target: any = [this.path[this.pathIndex][0], this.path[this.pathIndex][1]];
 
 
-			if (this.sprite.x < target[0] * 32) { 
+
+			if (this.sprite.x < this.pathTargetGrid.x * 32) { 
 				this.sprite.x += 1; 
 			}
-			if (this.sprite.x > target[0] * 32) { 
+			if (this.sprite.x > this.pathTargetGrid.x * 32) { 
 				this.sprite.x -= 1; 
 			}
-			if (this.sprite.y < target[1] * 32) { 
+			if (this.sprite.y < this.pathTargetGrid.y * 32) { 
 				this.sprite.y += 1; 
 			}
-			if (this.sprite.y > target[1] * 32) { 
+			if (this.sprite.y > this.pathTargetGrid.y * 32) { 
 				this.sprite.y -= 1;
 			}
-			if (current[0] == target[0] && current[1] == target[1] && this.sprite.x%32 == 0 && this.sprite.y%32 == 0) {
+			if (this.currentGrid.x == this.pathTargetGrid.x && this.currentGrid.y == this.pathTargetGrid.y && this.sprite.x%32 == 0 && this.sprite.y%32 == 0) {
 				this.pathIndex++;
+				this.currentGrid = this.sprite.getGrids();
+				this.pathTargetGrid = new Grid(this.path[this.pathIndex].x, this.path[this.pathIndex].y);
 				if(this.pathIndex == this.pathSize) {
 					//this.updatePath();
 					//this.pathIndex = 0;
@@ -91,15 +97,19 @@ class ZombiePirate {
         this.sprite.update();
 	}
 	render() {
-		this.path.forEach(pathgrid => { 
-			Game.getInstance().context.drawImage(
-				this.debugimage,
-				pathgrid[0] * 32,
-				pathgrid[1] * 32
-				
-		);
-		});
+		this.pathFinder.render();
 		this.sprite.render();
+	}
+}
+class Grid {
+	x: number;
+	y: number;
+	constructor(x, y) {
+		this.setXY(x, y);
+	}
+	setXY(x,y) {
+		this.x = x;
+		this.y = y;	
 	}
 }
 class Player {
@@ -139,25 +149,25 @@ class Player {
 	walk(direction) {
 
 		if(direction == 'down') {
-			var nextGrid: any[] = this.sprite.getGridsFor(this.sprite.x, this.sprite.y + this.walkspeed);
+			var nextGrid: Grid = Game.getGridsFor(this.sprite.x, this.sprite.y + this.walkspeed);
 			var collided: boolean = Game.getInstance().level.checkCollision(nextGrid);
 			if(!collided) {
 				this.sprite.y += this.walkspeed;
 			}
 		} else if (direction == 'up') {
-			var nextGrid: any[] = this.sprite.getGridsFor(this.sprite.x, this.sprite.y - this.walkspeed);
+			var nextGrid: Grid = Game.getGridsFor(this.sprite.x, this.sprite.y - this.walkspeed);
 			var collided: boolean = Game.getInstance().level.checkCollision(nextGrid);
 			if (!collided) {
 				this.sprite.y -= this.walkspeed;
 			}
 		} else if (direction == 'left') {
-			var nextGrid: any[] = this.sprite.getGridsFor(this.sprite.x - this.walkspeed, this.sprite.y);
+			var nextGrid: Grid = Game.getGridsFor(this.sprite.x - this.walkspeed, this.sprite.y);
 			var collided: boolean = Game.getInstance().level.checkCollision(nextGrid);
 			if(!collided) {
 				this.sprite.x -= this.walkspeed;
 			}
 		} else if (direction == 'right') {
-			var nextGrid: any[] = this.sprite.getGridsFor(this.sprite.x + this.walkspeed, this.sprite.y);
+			var nextGrid: Grid = Game.getGridsFor(this.sprite.x + this.walkspeed, this.sprite.y);
 			var collided: boolean = Game.getInstance().level.checkCollision(nextGrid);
 			if(!collided) {
 				this.sprite.x += this.walkspeed;
@@ -215,14 +225,9 @@ class Sprite {
 		this.gridY = Math.floor(this.y / Game.getInstance().level.tileHeight);
 	}
 	getGrids() {
-		return this.getGridsFor(this.x, this.y);
+		return Game.getGridsFor(this.x, this.y);
 	}
-	getGridsFor(x,y) {
-		return [
-			Math.floor(x / Game.getInstance().level.tileWidth),
-			Math.floor(y / Game.getInstance().level.tileHeight)
-		]
-	}
+	
 	addState(state: AnimationState) {
 		this.states.push(state);
 	}
@@ -358,32 +363,58 @@ class Level {
 		this.tilesX = tilesX;
 		this.tilesY = tilesY;
 		this.collision = [
-			[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-			[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-			[0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,0],
-			[0,0,1,2,2,2,2,2,2,2,2,2,2,1,0,0,0,0,0,0,1,2,2,2,2,2,2,2,2,2,1,0],
-			[0,0,1,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,1,0],
-			[0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
-			[0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
-			[0,0,1,2,2,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,2,2,1,0],
-			[0,0,1,2,2,1,1,1,1,1,2,2,2,2,2,1,1,1,1,2,2,2,2,2,2,1,1,1,2,2,1,0],
-			[0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,1,0],
-			[0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,1,0],
-			[0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,1,0],
-			[0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
-			[0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
-			[0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
-			[0,0,1,2,2,2,2,2,2,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
-			[0,0,1,2,2,2,2,2,2,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
-			[0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
-			[0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
-			[0,0,1,2,2,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,2,2,1,0],
-			[0,0,1,2,2,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,2,2,1,0],
-			[0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-			[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-			[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+[0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+[0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0,0],
+[0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0,0],
+[0,0,1,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,1,1,1,0,0],
+[0,0,1,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,1,1,1,0,0],
+[0,0,1,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,1,1,1,0,0],
+[0,0,1,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,1,1,1,0,0],
+[0,0,1,2,2,2,2,1,1,2,2,2,2,2,2,1,1,2,2,2,2,1,0,0],
+[0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,1,0,0],
+[0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,1,0,0],
+[0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,1,0,0],
+[0,0,1,1,1,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,1,0,0],
+[0,0,0,0,1,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,1,0,0],
+[0,0,0,0,1,2,2,2,1,1,1,1,2,2,2,2,2,2,2,2,2,1,0,0],
+[0,0,0,0,1,2,2,2,1,1,1,1,2,2,2,2,2,2,2,2,2,1,0,0],
+[0,0,0,0,1,2,2,2,1,1,1,1,2,2,2,2,2,2,2,2,2,1,0,0],
+[0,0,0,0,1,2,2,2,1,1,1,1,2,2,2,2,2,2,2,2,2,1,0,0],
+[0,0,0,0,1,2,2,2,2,1,1,1,2,2,2,2,2,2,2,2,2,1,0,0],
+[0,0,1,1,1,2,2,2,2,1,1,1,2,2,2,2,2,2,2,2,2,1,0,0],
+[0,0,1,2,2,2,2,2,2,1,1,1,2,2,2,2,2,2,2,2,2,1,0,0],
+[0,0,1,2,2,2,2,2,2,1,1,1,2,2,2,2,2,2,2,2,2,1,0,0],
+[0,0,1,2,2,2,2,2,2,1,1,1,2,2,2,2,2,2,2,2,2,1,0,0],
+[0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,0,0],
+[0,0,1,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,1,1,1,0,0],
+[0,0,1,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,1,1,1,0,0],
+[0,0,1,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,1,1,1,0,0],
+[0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0,0],
+[0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0,0],
+[0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+
+
+
+
 		];
+		l('--start--');
+		l(this.collision[9][14]);
+		l(this.collision[10][14]);
+		l(this.collision[11][14]);
+		l(this.collision[12][14]);
+		l(this.collision[13][14]);
+		l(this.collision[14][14]);
 		l(this.collision[15][14]);
+		l(this.collision[16][14]);
+		l(this.collision[17][14]);
+		l(this.collision[18][14]);
+		l(this.collision[19][14]);
+		l(this.collision[20][14]);
+		l('--end--');
 	}
 	render() {
 		Game.getInstance().context.drawImage(
@@ -424,7 +455,7 @@ class Level {
 		);	
 	}
 	checkCollision(grid) {
-		var gridType = this.collision[grid[1]+1][grid[0]+1];
+		var gridType = this.collision[grid.x+1][grid.y+1];
 		if (gridType == 1) {
 			return true;
 		}
@@ -433,15 +464,13 @@ class Level {
 	debug() {
 		for (var x = 0; x <= 31; x++) {         
 			for (var y = 0; y <= 23; y++) {         
-				if(this.collision[y][x] != 2) {
+				if(this.collision[x][y] != 2) {
 					Game.getInstance().context.drawImage(
 						this.debugimage,
 						x * 32,
 						y * 32
 					);
 				}
-				//Game.getInstance().context.fillText(this.collision[y][x], x*32, y*32);
-				//l([x, y]);
         	}  
         }  
 	}
@@ -472,7 +501,9 @@ class Game {
     {
         return Game.instance;
     }
-
+	public static getGridsFor(x,y) {
+		return new Grid(Math.floor(x / Game.getInstance().level.tileWidth), Math.floor(y / Game.getInstance().level.tileHeight));
+	}
     public static getDeltaTime():number
     {
 		return Game.getInstance().deltaTime;
