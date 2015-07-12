@@ -13,6 +13,7 @@ class ZombiePirate {
 	debugimage: any;
 	currentGrid: Grid;
 	pathTargetGrid: Grid;
+	attacking: boolean = false;
 	constructor() {
 		// Set Sprite
 		var image : any = new Image();
@@ -21,8 +22,8 @@ class ZombiePirate {
 
 
 		this.sprite = new Sprite(32, 48, image);
-		this.sprite.x = 9 * 32;
-		this.sprite.y = 14 * 32;
+		this.sprite.x = 4 * 32;
+		this.sprite.y = 4 * 32;
 		this.sprite.setGrids();
 		// Set AnimationStates for Sprite
 		this.sprite.addState(new AnimationState("walkDown", [[1,1],[1,2],[1,3]]));
@@ -49,46 +50,53 @@ class ZombiePirate {
 		
 	}
 
+	checkPlayerCollision():boolean {
+		var collision = false;
+		
+		var targetGrid: Grid = Game.getGridsFor(Game.getInstance().player.sprite.x, Game.getInstance().player.sprite.y);
+		
+		if (this.currentGrid.x == targetGrid.x && this.currentGrid.y == targetGrid.y) { collision == true; }
+		if (this.currentGrid.x + 1 == targetGrid.x && this.currentGrid.y == targetGrid.y) { collision == true; }
+		if (this.currentGrid.x - 1 == targetGrid.x && this.currentGrid.y == targetGrid.y) { collision == true; }
+		if (this.currentGrid.x + 1 == targetGrid.x && this.currentGrid.y + 1== targetGrid.y) { collision == true; }
+		if (this.currentGrid.x + 1 == targetGrid.x && this.currentGrid.y - 1== targetGrid.y) { collision == true; }
+		if (this.currentGrid.x - 1 == targetGrid.x && this.currentGrid.y - 1== targetGrid.y) { collision == true; }
+		if (this.currentGrid.x - 1 == targetGrid.x && this.currentGrid.y + 1== targetGrid.y) { collision == true; }
+		if (this.currentGrid.x == targetGrid.x && this.currentGrid.y + 1== targetGrid.y) { collision == true; }
+		if (this.currentGrid.x == targetGrid.x && this.currentGrid.y - 1== targetGrid.y) { collision == true; }
+		return collision;
+	}
+
 	update() {
-		//l('update');
-		if(this.pathTick%2 == 0 && this.pathIndex < this.pathSize) {
-			//l('tick');
-
-
-
-			if (this.sprite.x < this.pathTargetGrid.x * 32) { 
-				this.sprite.x += 1; 
+		if(this.pathTick%1 == 0 && this.pathIndex < this.pathSize) {
+			//this.attacking = this.checkPlayerCollision();
+			if(this.attacking) {
+				l('attacking');
 			}
-			if (this.sprite.x > this.pathTargetGrid.x * 32) { 
-				this.sprite.x -= 1; 
+			if(!this.attacking) {
+				if (this.sprite.x < this.pathTargetGrid.x * 32) { 
+					this.sprite.x += 1; 
+				}
+				if (this.sprite.x > this.pathTargetGrid.x * 32) { 
+					this.sprite.x -= 1; 
+				}
+				if (this.sprite.y < this.pathTargetGrid.y * 32) { 
+					this.sprite.y += 1; 
+				}
+				if (this.sprite.y > this.pathTargetGrid.y * 32) { 
+					this.sprite.y -= 1;
+				}
+				if (this.sprite.x == this.pathTargetGrid.x*32 && this.sprite.y == this.pathTargetGrid.y*32 && this.sprite.x%32 == 0 && this.sprite.y%32 == 0) {
+					this.pathIndex++;
+					if(this.pathIndex == this.pathSize) {
+						this.updatePath();
+						this.pathIndex = 0;
+					}		 
+					this.currentGrid = this.sprite.getGrids();
+					this.pathTargetGrid = new Grid(this.path[this.pathIndex].x, this.path[this.pathIndex].y);
+				}
+				this.pathTick = 0;
 			}
-			if (this.sprite.y < this.pathTargetGrid.y * 32) { 
-				this.sprite.y += 1; 
-			}
-			if (this.sprite.y > this.pathTargetGrid.y * 32) { 
-				this.sprite.y -= 1;
-			}
-			
-			if (this.sprite.x == this.pathTargetGrid.x*32 && this.sprite.y == this.pathTargetGrid.y*32 && this.sprite.x%32 == 0 && this.sprite.y%32 == 0) {
-				l('FLAP');
-				this.pathIndex++;
-				if(this.pathIndex == this.pathSize) {
-					//this.updatePath();
-					//this.pathIndex = 0;
-				}		 
-				this.currentGrid = this.sprite.getGrids();
-				this.pathTargetGrid = new Grid(this.path[this.pathIndex].x, this.path[this.pathIndex].y);
-			}
-			
-
-			//l([this.path[this.pathIndex][0] * 32, this.path[this.pathIndex][1] * 32]);
-			//this.sprite.x = this.path[this.pathIndex][0] * 32;
-			//this.sprite.y = this.path[this.pathIndex][1] * 32;
-			//l('After');
-			//l([this.sprite.x / 32, this.sprite.y / 32]);
-			//this.pathIndex++;
-			//this.currentState.nextFrame();
-			this.pathTick = 0;
 
         }
         this.pathTick++;
