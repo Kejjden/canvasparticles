@@ -13,7 +13,7 @@ var ZombiePirate = (function () {
         image.src = "images/zombie-pirate.png";
         this.sprite = new Sprite(32, 48, image);
         this.sprite.x = 4 * 32;
-        this.sprite.y = 4 * 32;
+        this.sprite.y = 7 * 32;
         this.sprite.setGrids();
         // Set AnimationStates for Sprite
         this.sprite.addState(new AnimationState("walkDown", [[1, 1], [1, 2], [1, 3]]));
@@ -31,10 +31,7 @@ var ZombiePirate = (function () {
     ZombiePirate.prototype.updatePath = function () {
         var targetGrid = Game.getGridsFor(Game.getInstance().player.sprite.x, Game.getInstance().player.sprite.y);
         this.currentGrid = Game.getGridsFor(this.sprite.x, this.sprite.y);
-        this.path = this.pathFinder.getPath(this.currentGrid, targetGrid);
-        this.pathSize = this.path.length;
-        this.pathIndex = 0;
-        this.pathTargetGrid = new Grid(this.path[this.pathIndex].x, this.path[this.pathIndex].y);
+        this.pathFinder.getPath(this.currentGrid, targetGrid);
     };
     ZombiePirate.prototype.checkPlayerCollision = function () {
         var collision = false;
@@ -69,32 +66,30 @@ var ZombiePirate = (function () {
         return collision;
     };
     ZombiePirate.prototype.update = function () {
-        if (this.pathTick % 1 == 0 && this.pathIndex < this.pathSize) {
+        if (this.pathTick % 2 == 0 && this.pathFinder.pathIndex < this.pathFinder.pathSize) {
             //this.attacking = this.checkPlayerCollision();
             if (this.attacking) {
                 l('attacking');
             }
             if (!this.attacking) {
-                if (this.sprite.x < this.pathTargetGrid.x * 32) {
+                if (this.sprite.x < this.pathFinder.getCurrent().x * 32) {
                     this.sprite.x += 1;
                 }
-                if (this.sprite.x > this.pathTargetGrid.x * 32) {
+                if (this.sprite.x > this.pathFinder.getCurrent().x * 32) {
                     this.sprite.x -= 1;
                 }
-                if (this.sprite.y < this.pathTargetGrid.y * 32) {
+                if (this.sprite.y < this.pathFinder.getCurrent().y * 32) {
                     this.sprite.y += 1;
                 }
-                if (this.sprite.y > this.pathTargetGrid.y * 32) {
+                if (this.sprite.y > this.pathFinder.getCurrent().y * 32) {
                     this.sprite.y -= 1;
                 }
-                if (this.sprite.x == this.pathTargetGrid.x * 32 && this.sprite.y == this.pathTargetGrid.y * 32 && this.sprite.x % 32 == 0 && this.sprite.y % 32 == 0) {
-                    this.pathIndex++;
-                    if (this.pathIndex == this.pathSize) {
+                if (this.sprite.x == this.pathFinder.getCurrent().x * 32 && this.sprite.y == this.pathFinder.getCurrent().y * 32 && this.sprite.x % 32 == 0 && this.sprite.y % 32 == 0) {
+                    // New sprite, new state?
+                    if (this.pathFinder.next()) {
                         this.updatePath();
-                        this.pathIndex = 0;
                     }
                     this.currentGrid = this.sprite.getGrids();
-                    this.pathTargetGrid = new Grid(this.path[this.pathIndex].x, this.path[this.pathIndex].y);
                 }
                 this.pathTick = 0;
             }
@@ -103,8 +98,8 @@ var ZombiePirate = (function () {
         this.sprite.update();
     };
     ZombiePirate.prototype.render = function () {
-        this.pathFinder.render();
         this.sprite.render();
+        this.pathFinder.render();
     };
     return ZombiePirate;
 })();
@@ -127,7 +122,7 @@ var Player = (function () {
         image.src = "images/originals/player.png";
         this.sprite = new Sprite(32, 48, image);
         this.sprite.x = 12 * 32;
-        this.sprite.y = 10 * 32;
+        this.sprite.y = 8 * 32;
         this.sprite.setGrids();
         // Set AnimationStates for Sprite
         this.sprite.addState(new AnimationState("walkDown", [[1, 1], [1, 2], [1, 3]]));
@@ -157,7 +152,7 @@ var Player = (function () {
     };
     Player.prototype.walk = function (direction) {
         if (direction == 'down') {
-            var nextGrid = Game.getGridsFor(this.sprite.x, this.sprite.y + this.walkspeed);
+            var nextGrid = Game.getGridsFor(this.sprite.x, this.sprite.y + this.walkspeed + 32);
             var collided = Game.getInstance().level.checkCollision(nextGrid);
             if (!collided) {
                 this.sprite.y += this.walkspeed;
@@ -178,7 +173,7 @@ var Player = (function () {
             }
         }
         else if (direction == 'right') {
-            var nextGrid = Game.getGridsFor(this.sprite.x + this.walkspeed, this.sprite.y);
+            var nextGrid = Game.getGridsFor(this.sprite.x + this.walkspeed + 32, this.sprite.y);
             var collided = Game.getInstance().level.checkCollision(nextGrid);
             if (!collided) {
                 this.sprite.x += this.walkspeed;
@@ -365,39 +360,30 @@ var Level = (function () {
         this.tilesX = tilesX;
         this.tilesY = tilesY;
         this.collision = [
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
-            [0, 0, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0],
-            [0, 0, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0],
-            [0, 0, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0],
-            [0, 0, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0],
-            [0, 0, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 0, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 0, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 0, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 0, 0],
-            [0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 0, 0],
-            [0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 0, 0],
-            [0, 0, 0, 0, 1, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 0, 0],
-            [0, 0, 0, 0, 1, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
-            [0, 0, 0, 0, 1, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
-            [0, 0, 0, 0, 1, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
-            [0, 0, 0, 0, 1, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
-            [0, 0, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0],
-            [0, 0, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0],
-            [0, 0, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0],
-            [0, 0, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
-            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
-            [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1],
+            [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1],
+            [1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         ];
     }
     Level.prototype.render = function () {
@@ -410,7 +396,7 @@ var Level = (function () {
         Game.getInstance().context.drawImage(this.doorRight.image, this.doorRight.state * 32, 0, 32, 32, this.doorRight.x, this.doorRight.y, 32, 32);
     };
     Level.prototype.checkCollision = function (grid) {
-        var gridType = this.collision[grid.x + 1][grid.y + 1];
+        var gridType = this.collision[grid.y][grid.x];
         if (gridType == 1) {
             return true;
         }
@@ -419,7 +405,7 @@ var Level = (function () {
     Level.prototype.debug = function () {
         for (var x = 0; x <= 31; x++) {
             for (var y = 0; y <= 23; y++) {
-                if (this.collision[x][y] != 2) {
+                if (this.collision[y][x] != 0) {
                     Game.getInstance().context.drawImage(this.debugimage, x * 32, y * 32);
                 }
             }

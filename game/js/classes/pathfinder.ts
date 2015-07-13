@@ -3,141 +3,54 @@ class Pathfinder {
 	mode: string = "stupid";
 	debugimage: any;
 	path: any[];
+	pf: any;
+	collision: any[][];
+	pathSize: number;
+	pathIndex: number;
 
 	constructor() {
 		this.debugimage = new Image();
 		this.debugimage.src = "images/grid-green.png";
+		this.collision = Game.getInstance().level.collision;
+
+	}
+	next(): any {
+		this.pathIndex++;
+		if(this.path.length == this.pathIndex) {
+			return false;
+		} 
+		var grid: Grid = new Grid(this.path[this.pathIndex][0], this.path[this.pathIndex][1]);
+		return grid;
+		
+	}
+	getCurrent() {
+		return new Grid(this.path[this.pathIndex][0], this.path[this.pathIndex][1]);
 	}
 	getPath(currentGrid:any, targetGrid:any) {
-		var leftOfTarget: boolean = false;
-		var aboveTarget: boolean = false;
-		var onLineX: boolean = false;
-		var onLineY: boolean = false;
-		var onTarget: boolean = false;
-		var firstX: boolean = false;
-		var xModifier: number = 0;
-		var yModifier: number = 0;
-		var yBuffer: number = 0;
-		this.path = []
-		//l('Current');
-		//l(currentGrid);
-		//l('Target');
-		//l(targetGrid);
-		//l('Path');
-		// Start with X
-		if (currentGrid.x < targetGrid.x) { leftOfTarget = true; }
-		if (currentGrid.x == targetGrid.x) { onLineX = true; }
-		// Now Y
-		if (currentGrid.y < targetGrid.y) { aboveTarget = true; }
-		if (currentGrid.y == targetGrid.y) { onLineY = true; }
-/*		
-		if (currentGrid.x == targetGrid.x && currentGrid.y == targetGrid.y) { onTarget = true;}
-		if (currentGrid.x == targetGrid.x && currentGrid.y + 1 == targetGrid.y) { onTarget = true;}
-		if (currentGrid.x == targetGrid.x && currentGrid.y - 1 == targetGrid.y) { onTarget = true;}
-		if (currentGrid.x -1 == targetGrid.x && currentGrid.y - 1 == targetGrid.y) { onTarget = true;}
-		if (currentGrid.x -1 == targetGrid.x && currentGrid.y + 1 == targetGrid.y) { onTarget = true;}
-		if (currentGrid.x +1 == targetGrid.x && currentGrid.y + 1 == targetGrid.y) { onTarget = true;}
-		if (currentGrid.x +1 == targetGrid.x && currentGrid.y - 1 == targetGrid.y) { onTarget = true;}
-		if (currentGrid.x - 1 == targetGrid.x && currentGrid.y == targetGrid.y) { onTarget = true;}
-		if (currentGrid.x + 1 == targetGrid.x && currentGrid.y == targetGrid.y) { onTarget = true;}
-*/
-		if(onTarget) {
-			l('onTarget');
-			//path.push([currentGrid.x, currentGrid.y]);
-			//return path;
-		}
-
-		// Random the first way
-		firstX = !!Math.floor(Math.random() * 2);
-		firstX = true;
-
-		// All random mode
-		leftOfTarget = !!Math.floor(Math.random() * 2);
-		aboveTarget = !!Math.floor(Math.random() * 2);
-		onLineX = !!Math.floor(Math.random() * 2);
-		onLineY = !!Math.floor(Math.random() * 2);
-		
-
-		if(leftOfTarget && aboveTarget) {
-			l('leftOfTarget && aboveTarget');
-			xModifier = 1;
-			yModifier = 1;
-		} else if (leftOfTarget && !aboveTarget) {
-			l('leftOfTarget && !aboveTarget');
-			xModifier = 1;
-			yModifier = -1;
-			yBuffer = 1;
-		}  else if (!leftOfTarget && aboveTarget) {
-			l('!leftOfTarget && aboveTarget');
-			xModifier = -1;
-			yModifier = 1;
-		} else if (!leftOfTarget && !aboveTarget) {
-			l('!leftOfTarget && !aboveTarget');
-			xModifier = -1;
-			yModifier = -1;
-			
-		}
-
-		l(yModifier);
-
-
-		if(firstX) {
-			var nextGrid : Grid = new Grid(currentGrid.x, currentGrid.y);
-			if(!onLineX) {
-				for (var xLoop = 1; xLoop <= 3; xLoop++) {
-					l(Game.getInstance().level.collision[nextGrid.x][nextGrid.y]);
-					if(Game.getInstance().level.collision[nextGrid.x][nextGrid.y] == 2) {
-						this.path.push(new Grid(nextGrid.x, nextGrid.y));
-						nextGrid.setXY(nextGrid.x + xModifier, nextGrid.y);
-					} else {
-						this.path.push(new Grid(nextGrid.x - xModifier, nextGrid.y));
-					}
+		this.pf = new PF.Grid(32,24);
+		for (var x = 0; x <= 31; x++) {         
+			for (var y = 0; y <= 23; y++) {         
+				if(this.collision[y][x] == 1) {
+					this.pf.setWalkableAt(x, y, false);
 				}
-				nextGrid.setXY(nextGrid.x - xModifier, nextGrid.y + yModifier);
-			}
-			
-			if (!onLineY) {
-				for (var yLoop = 1; yLoop <= 3; yLoop++) {
-					l(Game.getInstance().level.collision[nextGrid.x][nextGrid.y]);
-					if (Game.getInstance().level.collision[nextGrid.x][nextGrid.y + yBuffer] == 2) {
-						this.path.push(new Grid(nextGrid.x, nextGrid.y));
-						nextGrid.setXY(nextGrid.x, nextGrid.y + yModifier);
-					} else {
-						this.path.push(new Grid(nextGrid.x, nextGrid.y - yModifier));
-					}
-				}
-			}
-		} else {
-			var nextGrid: Grid = new Grid(currentGrid.x, currentGrid.y);
-			for (var yLoop = 1; yLoop <= 3; yLoop++) {
-				if(Game.getInstance().level.collision[nextGrid.x][nextGrid.y] == 2) {
-					this.path.push([nextGrid.x, nextGrid.y]);
-					nextGrid.setXY(nextGrid.x, nextGrid.y + yModifier);
-				} else {
-					this.path.push([nextGrid.x, nextGrid.y - yModifier]);
-				}
-			}
-			//nextGrid = [nextGrid.x + xModifier, nextGrid.y];
-			for (var xLoop = 1; xLoop <= 3; xLoop++) {
-				if(Game.getInstance().level.collision[nextGrid.x][nextGrid.y] == 2) {
-					this.path.push(nextGrid);
-					nextGrid.setXY(nextGrid.x + xModifier, nextGrid.y);
+        	}  
+        }  
+		var finder = new PF.AStarFinder();
+		this.path = finder.findPath(currentGrid.x, currentGrid.y, targetGrid.x, targetGrid.y, this.pf);
 
-				} else {
-					this.path.push(new Grid(nextGrid.x, nextGrid.y + xModifier));
-				}
-			}
-		}
+		this.pathSize = this.path.length;
+		this.pathIndex = 0;
 
 		return this.path;
 	}
 
 	render() {
 		this.path.forEach(pathgrid => { 
+
 			Game.getInstance().context.drawImage(
 				this.debugimage,
-				pathgrid.x * 32,
-				pathgrid.y * 32
+				pathgrid[0] * 32,
+				pathgrid[1] * 32
 				
 		);
 		});
