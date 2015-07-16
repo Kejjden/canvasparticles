@@ -284,7 +284,8 @@ var Sprite = (function () {
     Sprite.prototype.render = function () {
         var frame = this.currentState.frames[this.currentState.currentFrame];
         if (this.pushQueue.length) {
-            frame = this.pushQueue.shift();
+            l('have pushQueue');
+            frame = this.pushQueue[0];
         }
         var framey = frame[0] * this.height - this.height;
         var framex = frame[1] * this.width - this.width;
@@ -293,6 +294,9 @@ var Sprite = (function () {
     Sprite.prototype.update = function () {
         if (this.tick % 10 == 0) {
             this.currentState.nextFrame();
+            if (this.pushQueue.length) {
+                this.pushQueue.shift();
+            }
             this.tick = 0;
         }
         this.tick++;

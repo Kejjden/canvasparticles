@@ -293,7 +293,8 @@ class Sprite {
 	render() {
 		var frame: number = this.currentState.frames[this.currentState.currentFrame];
 		if(this.pushQueue.length) {
-			frame = this.pushQueue.shift();
+			l('have pushQueue');
+			frame = this.pushQueue[0];
 		}
 		var framey: number = frame[0] * this.height - this.height;
 		var framex: number = frame[1] * this.width - this.width;
@@ -315,6 +316,9 @@ class Sprite {
 	update() {
         if(this.tick%10 == 0) {
 			this.currentState.nextFrame();
+			if(this.pushQueue.length) {
+				this.pushQueue.shift();
+			}
 			this.tick = 0;
         }
         this.tick++;
