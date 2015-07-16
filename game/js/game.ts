@@ -22,8 +22,6 @@ class ZombiePirate {
 		var image : any = new Image();
 		image.src = "images/zombie-pirate.png";
 
-
-
 		this.sprite = new Sprite(32, 48, image);
 		this.sprite.x = 4 * 32;
 		this.sprite.y = 7 * 32;
@@ -92,14 +90,12 @@ class ZombiePirate {
 					// New sprite, new state?
 					var prevGrid: Grid = this.pathFinder.getCurrent();
 					if(this.pathFinder.next()) {
-						l('next!');
 						var nextGrid: Grid = this.pathFinder.getCurrent();
 						if (prevGrid.x < nextGrid.x) { this.sprite.setState('walkRight'); }
 						else if (prevGrid.x > nextGrid.x) { this.sprite.setState('walkLeft'); }
 						else if (prevGrid.y < nextGrid.y) { this.sprite.setState('walkDown'); }
 						else if (prevGrid.y > nextGrid.y) { this.sprite.setState('walkUp'); }
 					} else {
-						l('updatingPath');
 						this.updatePath();
 					}
 	 
@@ -133,7 +129,9 @@ class Player {
 	sprite: Sprite;
 	health: number = 100;
 	walkspeed: number = 3;
+	attacking: boolean = false;
 	debugimage: any;
+	direction: string = 'down';
 	constructor() {
 		this.debugimage = new Image();
 		this.debugimage.src = "images/grid-green.png";
@@ -154,6 +152,10 @@ class Player {
 		this.sprite.addState(new AnimationState("standLeft", [[2,2]]));
 		this.sprite.addState(new AnimationState("standRight",[[3,2]]));
 		this.sprite.addState(new AnimationState("standUp",	 [[4,2]]));
+		this.sprite.addState(new AnimationState("standUp",	 [[4,2]]));
+		
+		this.sprite.addState(new AnimationState("meleeAttackdown", 	[[5,1],[5,2]]));
+		
 		this.sprite.setState("standDown");
 	}
 
@@ -168,24 +170,28 @@ class Player {
 	walk(direction) {
 
 		if(direction == 'down') {
+			this.direction = 'down';
 			var nextGrid: Grid = Game.getGridsFor(this.sprite.x, this.sprite.y + this.walkspeed);
 			var collided: boolean = Game.getInstance().level.checkCollision(this.sprite.x, this.sprite.y + this.walkspeed, nextGrid);
 			if(!collided) {
 				this.sprite.y += this.walkspeed;
 			}
 		} else if (direction == 'up') {
+			this.direction = 'up';
 			var nextGrid: Grid = Game.getGridsFor(this.sprite.x, this.sprite.y - this.walkspeed);
 			var collided: boolean = Game.getInstance().level.checkCollision(this.sprite.x, this.sprite.y - this.walkspeed, nextGrid);
 			if (!collided) {
 				this.sprite.y -= this.walkspeed;
 			}
 		} else if (direction == 'left') {
+			this.direction = 'left';
 			var nextGrid: Grid = Game.getGridsFor(this.sprite.x - this.walkspeed, this.sprite.y);
 			var collided: boolean = Game.getInstance().level.checkCollision(this.sprite.x - this.walkspeed, this.sprite.y, nextGrid);
 			if(!collided) {
 				this.sprite.x -= this.walkspeed;
 			}
 		} else if (direction == 'right') {
+			this.direction = 'right';
 			var nextGrid: Grid = Game.getGridsFor(this.sprite.x + this.walkspeed, this.sprite.y);
 			var collided: boolean = Game.getInstance().level.checkCollision(this.sprite.x + this.walkspeed, this.sprite.y, nextGrid);
 			if(!collided) {
@@ -193,6 +199,11 @@ class Player {
 			}
 		}
 		this.sprite.setGrids();
+	}
+
+	attack() {
+		this.attacking = true;
+		this.sprite.pushState('meleeAttack' + this.direction);
 	}
 
 	render() {
@@ -235,7 +246,7 @@ class Sprite {
 	y: number = 0;
 	gridX: number;
 	gridY: number;
-
+	pushQueue: any[] = [];
 
 	constructor(width, height, image) {
 		this.context = Game.getInstance().context;
@@ -251,6 +262,24 @@ class Sprite {
 		return Game.getGridsFor(this.x, this.y);
 	}
 	
+	pushState(name: string) {
+		var stateToPush: AnimationState = this.getState(name);
+		stateToPush.frames.forEach(frame => { 
+			this.pushQueue.push(frame);
+		});
+	}
+
+	getState(name: string) {
+		var ret: AnimationState;
+		this.states.forEach(state => {
+		    if(state.getName() == name) {
+				ret = state;
+		    }
+		});
+		return ret;
+	}
+
+
 	addState(state: AnimationState) {
 		this.states.push(state);
 	}
@@ -264,6 +293,9 @@ class Sprite {
 
 	render() {
 		var frame: number = this.currentState.frames[this.currentState.currentFrame];
+		if(this.pushQueue.length) {
+			frame = this.pushQueue.shift();
+		}
 		var framey: number = frame[0] * this.height - this.height;
 		var framex: number = frame[1] * this.width - this.width;
 		
@@ -309,6 +341,11 @@ class Controls {
 			if (!this.checkForState(event)) { Game.getInstance().player.sprite.setState('standUp'); }
 		} else if(event.key == "ArrowDown" && event.type == 'keyup' && Game.getInstance().player.sprite.currentState.name == 'walkDown') {
 			if (!this.checkForState(event)) { Game.getInstance().player.sprite.setState('standDown'); }
+		}
+
+		// Basic Attack
+		if(event.key == " " && event.type == 'keyup') {
+			Game.getInstance().player.attack();
 		}
 	}
 
@@ -537,9 +574,9 @@ class Game {
 	    if(this.deltaTime>1)this.deltaTime=0;
 	    this.lastDeltaUpdate=now;
 
+		this.player.update();
 		this.level.render();
 		this.player.render();
-		this.player.update();
 
 		this.zombiepirates.forEach(pirate  => {
 			pirate.update();

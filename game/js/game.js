@@ -88,7 +88,6 @@ var ZombiePirate = (function () {
                     // New sprite, new state?
                     var prevGrid = this.pathFinder.getCurrent();
                     if (this.pathFinder.next()) {
-                        l('next!');
                         var nextGrid = this.pathFinder.getCurrent();
                         if (prevGrid.x < nextGrid.x) {
                             this.sprite.setState('walkRight');
@@ -104,7 +103,6 @@ var ZombiePirate = (function () {
                         }
                     }
                     else {
-                        l('updatingPath');
                         this.updatePath();
                     }
                     this.currentGrid = this.sprite.getGrids();
@@ -135,6 +133,8 @@ var Player = (function () {
     function Player() {
         this.health = 100;
         this.walkspeed = 3;
+        this.attacking = false;
+        this.direction = 'down';
         this.debugimage = new Image();
         this.debugimage.src = "images/grid-green.png";
         // Set Sprite
@@ -153,6 +153,8 @@ var Player = (function () {
         this.sprite.addState(new AnimationState("standLeft", [[2, 2]]));
         this.sprite.addState(new AnimationState("standRight", [[3, 2]]));
         this.sprite.addState(new AnimationState("standUp", [[4, 2]]));
+        this.sprite.addState(new AnimationState("standUp", [[4, 2]]));
+        this.sprite.addState(new AnimationState("meleeAttackdown", [[5, 1], [5, 2]]));
         this.sprite.setState("standDown");
     }
     Player.prototype.update = function () {
@@ -172,6 +174,7 @@ var Player = (function () {
     };
     Player.prototype.walk = function (direction) {
         if (direction == 'down') {
+            this.direction = 'down';
             var nextGrid = Game.getGridsFor(this.sprite.x, this.sprite.y + this.walkspeed);
             var collided = Game.getInstance().level.checkCollision(this.sprite.x, this.sprite.y + this.walkspeed, nextGrid);
             if (!collided) {
@@ -179,6 +182,7 @@ var Player = (function () {
             }
         }
         else if (direction == 'up') {
+            this.direction = 'up';
             var nextGrid = Game.getGridsFor(this.sprite.x, this.sprite.y - this.walkspeed);
             var collided = Game.getInstance().level.checkCollision(this.sprite.x, this.sprite.y - this.walkspeed, nextGrid);
             if (!collided) {
@@ -186,6 +190,7 @@ var Player = (function () {
             }
         }
         else if (direction == 'left') {
+            this.direction = 'left';
             var nextGrid = Game.getGridsFor(this.sprite.x - this.walkspeed, this.sprite.y);
             var collided = Game.getInstance().level.checkCollision(this.sprite.x - this.walkspeed, this.sprite.y, nextGrid);
             if (!collided) {
@@ -193,6 +198,7 @@ var Player = (function () {
             }
         }
         else if (direction == 'right') {
+            this.direction = 'right';
             var nextGrid = Game.getGridsFor(this.sprite.x + this.walkspeed, this.sprite.y);
             var collided = Game.getInstance().level.checkCollision(this.sprite.x + this.walkspeed, this.sprite.y, nextGrid);
             if (!collided) {
@@ -200,6 +206,10 @@ var Player = (function () {
             }
         }
         this.sprite.setGrids();
+    };
+    Player.prototype.attack = function () {
+        this.attacking = true;
+        this.sprite.pushState('meleeAttack' + this.direction);
     };
     Player.prototype.render = function () {
         this.sprite.render();
@@ -231,6 +241,7 @@ var Sprite = (function () {
         this.tick = 0;
         this.x = 0;
         this.y = 0;
+        this.pushQueue = [];
         this.context = Game.getInstance().context;
         this.width = width;
         this.height = height;
@@ -242,6 +253,22 @@ var Sprite = (function () {
     };
     Sprite.prototype.getGrids = function () {
         return Game.getGridsFor(this.x, this.y);
+    };
+    Sprite.prototype.pushState = function (name) {
+        var _this = this;
+        var stateToPush = this.getState(name);
+        stateToPush.frames.forEach(function (frame) {
+            _this.pushQueue.push(frame);
+        });
+    };
+    Sprite.prototype.getState = function (name) {
+        var ret;
+        this.states.forEach(function (state) {
+            if (state.getName() == name) {
+                ret = state;
+            }
+        });
+        return ret;
     };
     Sprite.prototype.addState = function (state) {
         this.states.push(state);
@@ -256,6 +283,9 @@ var Sprite = (function () {
     };
     Sprite.prototype.render = function () {
         var frame = this.currentState.frames[this.currentState.currentFrame];
+        if (this.pushQueue.length) {
+            frame = this.pushQueue.shift();
+        }
         var framey = frame[0] * this.height - this.height;
         var framex = frame[1] * this.width - this.width;
         this.context.drawImage(this.image, framex, framey, this.width, this.height, this.x, this.y, this.width, this.height);
@@ -299,6 +329,10 @@ var Controls = (function () {
             if (!this.checkForState(event)) {
                 Game.getInstance().player.sprite.setState('standDown');
             }
+        }
+        // Basic Attack
+        if (event.key == " " && event.type == 'keyup') {
+            Game.getInstance().player.attack();
         }
     };
     Controls.prototype.updatePressed = function (event) {
@@ -457,9 +491,9 @@ var Game = (function () {
             if (_this.deltaTime > 1)
                 _this.deltaTime = 0;
             _this.lastDeltaUpdate = now;
+            _this.player.update();
             _this.level.render();
             _this.player.render();
-            _this.player.update();
             _this.zombiepirates.forEach(function (pirate) {
                 pirate.update();
                 pirate.render();

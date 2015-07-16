@@ -29,10 +29,13 @@ declare class Player {
     sprite: Sprite;
     health: number;
     walkspeed: number;
+    attacking: boolean;
     debugimage: any;
+    direction: string;
     constructor();
     update(): void;
     walk(direction: any): void;
+    attack(): void;
     render(): void;
 }
 declare class AnimationState {
@@ -55,9 +58,12 @@ declare class Sprite {
     y: number;
     gridX: number;
     gridY: number;
+    pushQueue: any[];
     constructor(width: any, height: any, image: any);
     setGrids(): void;
     getGrids(): Grid;
+    pushState(name: string): void;
+    getState(name: string): AnimationState;
     addState(state: AnimationState): void;
     setState(name: string): void;
     render(): void;
