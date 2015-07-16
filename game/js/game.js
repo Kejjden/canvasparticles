@@ -86,7 +86,25 @@ var ZombiePirate = (function () {
                 }
                 if (this.sprite.x == this.pathFinder.getCurrent().x * 32 && this.sprite.y == this.pathFinder.getCurrent().y * 32 && this.sprite.x % 32 == 0 && this.sprite.y % 32 == 0) {
                     // New sprite, new state?
+                    var prevGrid = this.pathFinder.getCurrent();
                     if (this.pathFinder.next()) {
+                        l('next!');
+                        var nextGrid = this.pathFinder.getCurrent();
+                        if (prevGrid.x < nextGrid.x) {
+                            this.sprite.setState('walkRight');
+                        }
+                        else if (prevGrid.x > nextGrid.x) {
+                            this.sprite.setState('walkLeft');
+                        }
+                        else if (prevGrid.y < nextGrid.y) {
+                            this.sprite.setState('walkDown');
+                        }
+                        else if (prevGrid.y > nextGrid.y) {
+                            this.sprite.setState('walkUp');
+                        }
+                    }
+                    else {
+                        l('updatingPath');
                         this.updatePath();
                     }
                     this.currentGrid = this.sprite.getGrids();
@@ -117,6 +135,8 @@ var Player = (function () {
     function Player() {
         this.health = 100;
         this.walkspeed = 3;
+        this.debugimage = new Image();
+        this.debugimage.src = "images/grid-green.png";
         // Set Sprite
         var image = new Image();
         image.src = "images/originals/player.png";
@@ -152,34 +172,37 @@ var Player = (function () {
     };
     Player.prototype.walk = function (direction) {
         if (direction == 'down') {
-            var nextGrid = Game.getGridsFor(this.sprite.x, this.sprite.y + this.walkspeed + 32);
-            var collided = Game.getInstance().level.checkCollision(nextGrid);
+            var nextGrid = Game.getGridsFor(this.sprite.x, this.sprite.y + this.walkspeed);
+            var collided = Game.getInstance().level.checkCollision(this.sprite.x, this.sprite.y + this.walkspeed, nextGrid);
             if (!collided) {
                 this.sprite.y += this.walkspeed;
             }
         }
         else if (direction == 'up') {
             var nextGrid = Game.getGridsFor(this.sprite.x, this.sprite.y - this.walkspeed);
-            var collided = Game.getInstance().level.checkCollision(nextGrid);
+            var collided = Game.getInstance().level.checkCollision(this.sprite.x, this.sprite.y - this.walkspeed, nextGrid);
             if (!collided) {
                 this.sprite.y -= this.walkspeed;
             }
         }
         else if (direction == 'left') {
             var nextGrid = Game.getGridsFor(this.sprite.x - this.walkspeed, this.sprite.y);
-            var collided = Game.getInstance().level.checkCollision(nextGrid);
+            var collided = Game.getInstance().level.checkCollision(this.sprite.x - this.walkspeed, this.sprite.y, nextGrid);
             if (!collided) {
                 this.sprite.x -= this.walkspeed;
             }
         }
         else if (direction == 'right') {
-            var nextGrid = Game.getGridsFor(this.sprite.x + this.walkspeed + 32, this.sprite.y);
-            var collided = Game.getInstance().level.checkCollision(nextGrid);
+            var nextGrid = Game.getGridsFor(this.sprite.x + this.walkspeed, this.sprite.y);
+            var collided = Game.getInstance().level.checkCollision(this.sprite.x + this.walkspeed, this.sprite.y, nextGrid);
             if (!collided) {
                 this.sprite.x += this.walkspeed;
             }
         }
         this.sprite.setGrids();
+    };
+    Player.prototype.render = function () {
+        this.sprite.render();
     };
     return Player;
 })();
@@ -395,12 +418,23 @@ var Level = (function () {
         Game.getInstance().context.drawImage(this.doorLeft.image, this.doorLeft.state * 32, 0, 32, 32, this.doorLeft.x, this.doorLeft.y, 32, 32);
         Game.getInstance().context.drawImage(this.doorRight.image, this.doorRight.state * 32, 0, 32, 32, this.doorRight.x, this.doorRight.y, 32, 32);
     };
-    Level.prototype.checkCollision = function (grid) {
-        var gridType = this.collision[grid.y][grid.x];
-        if (gridType == 1) {
-            return true;
-        }
-        return false;
+    Level.prototype.checkCollision = function (x, y, grid) {
+        var _this = this;
+        var positions = [
+            [x, y],
+            [x + 31, y],
+            [x, y + 31],
+            [x + 31, y + 31],
+        ];
+        var ret = false;
+        positions.forEach(function (position) {
+            var grid = Game.getGridsFor(position[0], position[1]);
+            var gridType = _this.collision[grid.y][grid.x];
+            if (gridType == 1) {
+                ret = true;
+            }
+        });
+        return ret;
     };
     Level.prototype.debug = function () {
         for (var x = 0; x <= 31; x++) {
@@ -423,9 +457,9 @@ var Game = (function () {
             if (_this.deltaTime > 1)
                 _this.deltaTime = 0;
             _this.lastDeltaUpdate = now;
-            _this.player.update();
             _this.level.render();
-            _this.player.sprite.render();
+            _this.player.render();
+            _this.player.update();
             _this.zombiepirates.forEach(function (pirate) {
                 pirate.update();
                 pirate.render();

@@ -29,9 +29,11 @@ declare class Player {
     sprite: Sprite;
     health: number;
     walkspeed: number;
+    debugimage: any;
     constructor();
     update(): void;
     walk(direction: any): void;
+    render(): void;
 }
 declare class AnimationState {
     name: string;
@@ -93,7 +95,7 @@ declare class Level {
     constructor(tileWidth: any, tileHeight: any, tilesX: any, tilesY: any);
     render(): void;
     renderLayer(): void;
-    checkCollision(grid: any): boolean;
+    checkCollision(x: any, y: any, grid: any): boolean;
     debug(): void;
 }
 declare class Game {

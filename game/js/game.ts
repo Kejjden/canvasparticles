@@ -92,9 +92,14 @@ class ZombiePirate {
 					// New sprite, new state?
 					var prevGrid: Grid = this.pathFinder.getCurrent();
 					if(this.pathFinder.next()) {
+						l('next!');
 						var nextGrid: Grid = this.pathFinder.getCurrent();
-						
+						if (prevGrid.x < nextGrid.x) { this.sprite.setState('walkRight'); }
+						else if (prevGrid.x > nextGrid.x) { this.sprite.setState('walkLeft'); }
+						else if (prevGrid.y < nextGrid.y) { this.sprite.setState('walkDown'); }
+						else if (prevGrid.y > nextGrid.y) { this.sprite.setState('walkUp'); }
 					} else {
+						l('updatingPath');
 						this.updatePath();
 					}
 	 
@@ -128,8 +133,10 @@ class Player {
 	sprite: Sprite;
 	health: number = 100;
 	walkspeed: number = 3;
-
+	debugimage: any;
 	constructor() {
+		this.debugimage = new Image();
+		this.debugimage.src = "images/grid-green.png";
 		// Set Sprite
 		var image : any = new Image();
 		image.src = "images/originals/player.png";
@@ -161,31 +168,35 @@ class Player {
 	walk(direction) {
 
 		if(direction == 'down') {
-			var nextGrid: Grid = Game.getGridsFor(this.sprite.x, this.sprite.y + this.walkspeed + 32);
-			var collided: boolean = Game.getInstance().level.checkCollision(nextGrid);
+			var nextGrid: Grid = Game.getGridsFor(this.sprite.x, this.sprite.y + this.walkspeed);
+			var collided: boolean = Game.getInstance().level.checkCollision(this.sprite.x, this.sprite.y + this.walkspeed, nextGrid);
 			if(!collided) {
 				this.sprite.y += this.walkspeed;
 			}
 		} else if (direction == 'up') {
 			var nextGrid: Grid = Game.getGridsFor(this.sprite.x, this.sprite.y - this.walkspeed);
-			var collided: boolean = Game.getInstance().level.checkCollision(nextGrid);
+			var collided: boolean = Game.getInstance().level.checkCollision(this.sprite.x, this.sprite.y - this.walkspeed, nextGrid);
 			if (!collided) {
 				this.sprite.y -= this.walkspeed;
 			}
 		} else if (direction == 'left') {
 			var nextGrid: Grid = Game.getGridsFor(this.sprite.x - this.walkspeed, this.sprite.y);
-			var collided: boolean = Game.getInstance().level.checkCollision(nextGrid);
+			var collided: boolean = Game.getInstance().level.checkCollision(this.sprite.x - this.walkspeed, this.sprite.y, nextGrid);
 			if(!collided) {
 				this.sprite.x -= this.walkspeed;
 			}
 		} else if (direction == 'right') {
-			var nextGrid: Grid = Game.getGridsFor(this.sprite.x + this.walkspeed + 32, this.sprite.y);
-			var collided: boolean = Game.getInstance().level.checkCollision(nextGrid);
+			var nextGrid: Grid = Game.getGridsFor(this.sprite.x + this.walkspeed, this.sprite.y);
+			var collided: boolean = Game.getInstance().level.checkCollision(this.sprite.x + this.walkspeed, this.sprite.y, nextGrid);
 			if(!collided) {
 				this.sprite.x += this.walkspeed;
 			}
 		}
 		this.sprite.setGrids();
+	}
+
+	render() {
+		this.sprite.render();
 	}
 
 }
@@ -443,12 +454,23 @@ class Level {
 			32,32
 		);	
 	}
-	checkCollision(grid) {
-		var gridType = this.collision[grid.y][grid.x];
-		if (gridType == 1) {
-			return true;
-		}
-		return false;
+	checkCollision(x, y, grid) {
+		var positions: any[] = [
+			[x, y],
+			[x+31, y],
+			[x, y+31],
+			[x+31, y+31],
+		];
+
+		var ret: boolean = false;
+		positions.forEach(position => {
+			var grid: Grid = Game.getGridsFor(position[0], position[1]);
+			var gridType = this.collision[grid.y][grid.x];
+			if (gridType == 1) {
+				ret = true;
+			}
+		});
+		return ret;
 	}
 	debug() {
 		for (var x = 0; x <= 31; x++) {         
@@ -514,10 +536,10 @@ class Game {
 	    this.deltaTime=(now-this.lastDeltaUpdate)/1000;
 	    if(this.deltaTime>1)this.deltaTime=0;
 	    this.lastDeltaUpdate=now;
-		this.player.update();
 
 		this.level.render();
-		this.player.sprite.render();
+		this.player.render();
+		this.player.update();
 
 		this.zombiepirates.forEach(pirate  => {
 			pirate.update();
