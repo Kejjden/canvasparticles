@@ -13,7 +13,7 @@ declare class ZombiePirate {
     currentGrid: Grid;
     pathTargetGrid: Grid;
     attacking: boolean;
-    constructor();
+    constructor(x: number, y: number);
     updatePath(): void;
     checkPlayerCollision(): boolean;
     update(): void;
@@ -113,6 +113,7 @@ declare class Game {
     controls: Controls;
     level: Level;
     zombiepirates: ZombiePirate[];
+    spawner: Spawner;
     constructor(context: any);
     static getInstance(): Game;
     static getGridsFor(x: any, y: any): Grid;

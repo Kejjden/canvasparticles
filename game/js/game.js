@@ -1,6 +1,6 @@
 /// <reference path="ref.ts" />
 var ZombiePirate = (function () {
-    function ZombiePirate() {
+    function ZombiePirate(x, y) {
         this.health = 10;
         this.walkspeed = 2;
         this.pathTick = 0;
@@ -12,8 +12,8 @@ var ZombiePirate = (function () {
         var image = new Image();
         image.src = "images/zombie-pirate.png";
         this.sprite = new Sprite(32, 48, image);
-        this.sprite.x = 4 * 32;
-        this.sprite.y = 7 * 32;
+        this.sprite.x = x;
+        this.sprite.y = y;
         this.sprite.setGrids();
         // Set AnimationStates for Sprite
         this.sprite.addState(new AnimationState("walkDown", [[1, 1], [1, 2], [1, 3]]));
@@ -492,6 +492,7 @@ var Game = (function () {
                 _this.deltaTime = 0;
             _this.lastDeltaUpdate = now;
             _this.player.update();
+            _this.spawner.update();
             _this.level.render();
             _this.player.render();
             _this.zombiepirates.forEach(function (pirate) {
@@ -521,8 +522,8 @@ var Game = (function () {
     Game.prototype.start = function () {
         this.level = new Level(32, 32, 32, 24);
         this.player = new Player();
-        this.zombiepirates.push(new ZombiePirate());
         this.controls = new Controls();
+        this.spawner = new Spawner();
         document.addEventListener("keydown", function (event) { return Game.getInstance().controls.update(event); });
         document.addEventListener("keyup", function (event) { return Game.getInstance().controls.update(event); });
         this.update();
