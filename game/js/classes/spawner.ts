@@ -43,31 +43,31 @@ class Spawner {
 
     nextWave() {
         if(this.timer) {
-            console.log("oh poop");
+            l("oh poop");
             return;
         }
 
         var delay = Math.max(2000, 1000 + this.counter * 5000);
-        console.log("new wave in: " + delay);
+        l("new wave in: " + delay);
         this.timer = new Timer(delay, this.newWave);
         this.timer.resume();
     }
 
     newWave = () => {
         this.activeDoor = this.getRandomDoor();
-        console.log("door open!");
+        l("door open!");
         this.activeDoor.state = 1;
         this.counter++;
         this.zombieCounter = Math.floor(Math.exp(this.counter) * 0.5);
-        console.log("spawncount: " + this.zombieCounter);
+        l("spawncount: " + this.zombieCounter);
         this.nextZombie();
     }
 
     nextZombie = () => {
-        console.log("zombies remaining: " + this.zombieCounter);
+        l("zombies remaining: " + this.zombieCounter);
         this.cancel();
         var pirate = new ZombiePirate(this.activeDoor.x, this.activeDoor.y);
-        this.game.zombiepirates.push(pirate);
+        this.game.entities.push(pirate);
         this.zombieCounter--;
         if(this.zombieCounter == 0) {
             this.timer = new Timer(1000, this.closeDoor);
@@ -79,14 +79,14 @@ class Spawner {
     }
 
     closeDoor = () => {
-        console.log("closing door");
+        l("closing door");
         this.activeDoor.state = 0;
         this.cancel();
         this.activeDoor = null;
-        if(this.counter < 5) {
+        if(this.counter < 2) {
             this.nextWave();
         } else {
-            console.log("you win111!");
+            l("you win111!");
         }
     }
 }

@@ -1,6 +1,40 @@
 /// <reference path="ref.ts" />
-var ZombiePirate = (function () {
+var __extends = this.__extends || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    __.prototype = b.prototype;
+    d.prototype = new __();
+};
+var Entity = (function () {
+    function Entity() {
+    }
+    Entity.prototype.update = function () { };
+    Entity.prototype.render = function () { };
+    return Entity;
+})();
+var SpriteEntity = (function (_super) {
+    __extends(SpriteEntity, _super);
+    function SpriteEntity(sprite) {
+        if (sprite === void 0) { sprite = null; }
+        _super.call(this);
+        this.sprite = sprite;
+    }
+    SpriteEntity.prototype.update = function () {
+        if (this.sprite) {
+            this.sprite.update();
+        }
+    };
+    SpriteEntity.prototype.render = function () {
+        if (this.sprite) {
+            this.sprite.render();
+        }
+    };
+    return SpriteEntity;
+})(Entity);
+var ZombiePirate = (function (_super) {
+    __extends(ZombiePirate, _super);
     function ZombiePirate(x, y) {
+        _super.call(this);
         this.health = 10;
         this.walkspeed = 2;
         this.pathTick = 0;
@@ -111,14 +145,14 @@ var ZombiePirate = (function () {
             }
         }
         this.pathTick++;
-        this.sprite.update();
+        _super.prototype.update.call(this);
     };
     ZombiePirate.prototype.render = function () {
-        this.sprite.render();
-        this.pathFinder.render();
+        _super.prototype.render.call(this);
+        //this.pathFinder.render();
     };
     return ZombiePirate;
-})();
+})(SpriteEntity);
 var Grid = (function () {
     function Grid(x, y) {
         this.setXY(x, y);
@@ -129,8 +163,10 @@ var Grid = (function () {
     };
     return Grid;
 })();
-var Player = (function () {
+var Player = (function (_super) {
+    __extends(Player, _super);
     function Player() {
+        _super.call(this);
         this.health = 100;
         this.walkspeed = 3;
         this.attacking = false;
@@ -155,6 +191,7 @@ var Player = (function () {
         this.sprite.addState(new AnimationState("standUp", [[4, 2]]));
         this.sprite.addState(new AnimationState("standUp", [[4, 2]]));
         this.sprite.addState(new AnimationState("meleeAttackdown", [[5, 1], [5, 2]]));
+        this.sprite.addState(new AnimationState("meleeAttackleft", [[6, 1], [6, 2]]));
         this.sprite.setState("standDown");
     }
     Player.prototype.update = function () {
@@ -170,7 +207,7 @@ var Player = (function () {
         if (this.sprite.currentState.name == "walkRight") {
             this.walk('right');
         }
-        this.sprite.update();
+        _super.prototype.update.call(this);
     };
     Player.prototype.walk = function (direction) {
         if (direction == 'down') {
@@ -211,11 +248,8 @@ var Player = (function () {
         this.attacking = true;
         this.sprite.pushState('meleeAttack' + this.direction);
     };
-    Player.prototype.render = function () {
-        this.sprite.render();
-    };
     return Player;
-})();
+})(SpriteEntity);
 var AnimationState = (function () {
     function AnimationState(name, frames) {
         this.currentFrame = 0;
@@ -488,18 +522,29 @@ var Level = (function () {
 var Game = (function () {
     function Game(context) {
         var _this = this;
-        this.zombiepirates = [];
+        this.entities = [];
         this.update = function () {
             var now = Date.now();
             _this.deltaTime = (now - _this.lastDeltaUpdate) / 1000;
             if (_this.deltaTime > 1)
                 _this.deltaTime = 0;
             _this.lastDeltaUpdate = now;
-            _this.player.update();
             _this.spawner.update();
             _this.level.render();
-            _this.player.render();
-            _this.zombiepirates.forEach(function (pirate) {
+            _this.entities.sort(function (a, b) {
+                if (a instanceof SpriteEntity && b instanceof SpriteEntity) {
+                    var ay = a.sprite ? a.sprite.y : 0;
+                    var by = b.sprite ? b.sprite.y : 0;
+                    if (ay > by) {
+                        return 1;
+                    }
+                    if (ay < by) {
+                        return -1;
+                    }
+                }
+                return 0;
+            });
+            _this.entities.forEach(function (pirate) {
                 pirate.update();
                 pirate.render();
             });
@@ -526,6 +571,7 @@ var Game = (function () {
     Game.prototype.start = function () {
         this.level = new Level(32, 32, 32, 24);
         this.player = new Player();
+        this.entities.push(this.player);
         this.controls = new Controls();
         this.spawner = new Spawner();
         document.addEventListener("keydown", function (event) { return Game.getInstance().controls.update(event); });

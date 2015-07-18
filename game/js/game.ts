@@ -3,9 +3,30 @@
 
 declare var PF;
 
-class ZombiePirate {
-	sprite: Sprite;
+class Entity {
+    update() {}
+    render() {}
+}
 
+class SpriteEntity extends Entity {
+	sprite: Sprite;
+    constructor(sprite: Sprite = null) {
+        super();
+        this.sprite = sprite;
+    }
+    update() {
+        if (this.sprite) {
+            this.sprite.update();
+        }
+    }
+    render() {
+        if (this.sprite) {
+            this.sprite.render();
+        }
+    }
+}
+
+class ZombiePirate extends SpriteEntity {
 	health: number = 10;
 	walkspeed: number = 2;
 	pathTick: number = 0;
@@ -18,14 +39,15 @@ class ZombiePirate {
 	pathTargetGrid: Grid;
 	attacking: boolean = false;
 	constructor(x: number, y: number) {
+        super();
 		// Set Sprite
 		var image : any = new Image();
 		image.src = "images/zombie-pirate.png";
-
 		this.sprite = new Sprite(32, 48, image);
 		this.sprite.x = x;
 		this.sprite.y = y;
 		this.sprite.setGrids();
+
 		// Set AnimationStates for Sprite
 		this.sprite.addState(new AnimationState("walkDown", [[1,1],[1,2],[1,3]]));
 		this.sprite.addState(new AnimationState("walkLeft", [[2,1],[2,2],[2,3]]));
@@ -45,9 +67,6 @@ class ZombiePirate {
 		var targetGrid: Grid = Game.getGridsFor(Game.getInstance().player.sprite.x, Game.getInstance().player.sprite.y);
 		this.currentGrid = Game.getGridsFor(this.sprite.x, this.sprite.y);
 		this.pathFinder.getPath(this.currentGrid, targetGrid);
-
-
-
 	}
 
 	checkPlayerCollision():boolean {
@@ -107,11 +126,11 @@ class ZombiePirate {
 
         }
         this.pathTick++;
-        this.sprite.update();
+        super.update();
 	}
 	render() {
-		this.sprite.render();
-		this.pathFinder.render();
+        super.render();
+		//this.pathFinder.render();
 	}
 }
 class Grid {
@@ -125,14 +144,14 @@ class Grid {
 		this.y = y;
 	}
 }
-class Player {
-	sprite: Sprite;
+class Player extends SpriteEntity {
 	health: number = 100;
 	walkspeed: number = 3;
 	attacking: boolean = false;
 	debugimage: any;
 	direction: string = 'down';
 	constructor() {
+        super();
 		this.debugimage = new Image();
 		this.debugimage.src = "images/grid-green.png";
 		// Set Sprite
@@ -153,9 +172,10 @@ class Player {
 		this.sprite.addState(new AnimationState("standRight",[[3,2]]));
 		this.sprite.addState(new AnimationState("standUp",	 [[4,2]]));
 		this.sprite.addState(new AnimationState("standUp",	 [[4,2]]));
-		
+
 		this.sprite.addState(new AnimationState("meleeAttackdown", 	[[5,1],[5,2]]));
-		
+		this.sprite.addState(new AnimationState("meleeAttackleft", 	[[6,1],[6,2]]));
+
 		this.sprite.setState("standDown");
 	}
 
@@ -164,7 +184,7 @@ class Player {
 		if (this.sprite.currentState.name == "walkUp")		{ this.walk('up');}
 		if (this.sprite.currentState.name == "walkLeft")	{ this.walk('left');}
 		if (this.sprite.currentState.name == "walkRight")	{ this.walk('right');}
-		this.sprite.update();
+		super.update();
 	}
 
 	walk(direction) {
@@ -204,10 +224,6 @@ class Player {
 	attack() {
 		this.attacking = true;
 		this.sprite.pushState('meleeAttack' + this.direction);
-	}
-
-	render() {
-		this.sprite.render();
 	}
 
 }
@@ -261,10 +277,10 @@ class Sprite {
 	getGrids() {
 		return Game.getGridsFor(this.x, this.y);
 	}
-	
+
 	pushState(name: string) {
 		var stateToPush: AnimationState = this.getState(name);
-		stateToPush.frames.forEach(frame => { 
+		stateToPush.frames.forEach(frame => {
 			this.pushQueue.push(frame);
 		});
 	}
@@ -535,7 +551,7 @@ class Game {
 	deltaTime: number;
 	controls: Controls;
 	level: Level;
-	zombiepirates: ZombiePirate[] = [];
+	entities: Entity[] = [];
 	spawner: Spawner;
 
 	constructor(context) {
@@ -564,6 +580,7 @@ class Game {
     start() {
         this.level = new Level(32, 32, 32, 24);
 		this.player = new Player();
+        this.entities.push(this.player);
         this.controls = new Controls();
         this.spawner = new Spawner();
 
@@ -578,15 +595,24 @@ class Game {
 	    if(this.deltaTime>1)this.deltaTime=0;
 	    this.lastDeltaUpdate=now;
 
-		this.player.update();
 		this.spawner.update();
 		this.level.render();
-		this.player.render();
 
+        this.entities.sort((a, b) => {
+        	if(a instanceof SpriteEntity && b instanceof SpriteEntity) {
+                var ay = a.sprite ? a.sprite.y : 0;
+                var by = b.sprite ? b.sprite.y : 0;
+                if(ay > by) {
+                    return 1;
+                }
+                if(ay < by) {
+                    return -1;
+                }
+        	}
+            return 0;
+        });
 
-
-
-		this.zombiepirates.forEach(pirate  => {
+		this.entities.forEach(pirate  => {
 			pirate.update();
 			pirate.render();
 		});
