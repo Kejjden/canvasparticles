@@ -45,6 +45,7 @@ class Pathfinder {
 	}
 
 	render() {
+		/*
 		this.path.forEach(pathgrid => { 
 
 			Game.getInstance().context.drawImage(
@@ -54,5 +55,6 @@ class Pathfinder {
 				
 		);
 		});
+		*/
 	}
 }

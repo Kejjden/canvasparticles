@@ -33,10 +33,17 @@ var Pathfinder = (function () {
         return this.path;
     };
     Pathfinder.prototype.render = function () {
-        var _this = this;
-        this.path.forEach(function (pathgrid) {
-            Game.getInstance().context.drawImage(_this.debugimage, pathgrid[0] * 32, pathgrid[1] * 32);
+        /*
+        this.path.forEach(pathgrid => {
+
+            Game.getInstance().context.drawImage(
+                this.debugimage,
+                pathgrid[0] * 32,
+                pathgrid[1] * 32
+                
+        );
         });
+        */
     };
     return Pathfinder;
 })();
