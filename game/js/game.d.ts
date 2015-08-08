@@ -1,7 +1,16 @@
 /// <reference path="ref.d.ts" />
 declare var PF: any;
-declare class ZombiePirate {
+declare class Entity {
+    update(): void;
+    render(): void;
+}
+declare class SpriteEntity extends Entity {
     sprite: Sprite;
+    constructor(sprite?: Sprite);
+    update(): void;
+    render(): void;
+}
+declare class ZombiePirate extends SpriteEntity {
     health: number;
     walkspeed: number;
     pathTick: number;
@@ -25,8 +34,7 @@ declare class Grid {
     constructor(x: any, y: any);
     setXY(x: any, y: any): void;
 }
-declare class Player {
-    sprite: Sprite;
+declare class Player extends SpriteEntity {
     health: number;
     walkspeed: number;
     attacking: boolean;
@@ -36,7 +44,6 @@ declare class Player {
     update(): void;
     walk(direction: any): void;
     attack(): void;
-    render(): void;
 }
 declare class AnimationState {
     name: string;
@@ -112,7 +119,7 @@ declare class Game {
     deltaTime: number;
     controls: Controls;
     level: Level;
-    zombiepirates: ZombiePirate[];
+    entities: Entity[];
     spawner: Spawner;
     constructor(context: any);
     static getInstance(): Game;

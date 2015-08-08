@@ -175,6 +175,8 @@ class Player extends SpriteEntity {
 
 		this.sprite.addState(new AnimationState("meleeAttackdown", 	[[5,1],[5,2]]));
 		this.sprite.addState(new AnimationState("meleeAttackleft", 	[[6,1],[6,2]]));
+		this.sprite.addState(new AnimationState("meleeAttackright",	[[7,1],[7,2]]));
+		this.sprite.addState(new AnimationState("meleeAttackup", 	[[8,1],[8,2]]));
 
 		this.sprite.setState("standDown");
 	}
