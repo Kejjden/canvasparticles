@@ -1,4 +1,4 @@
-/// <reference path="../ref.ts" />
+/// <reference path="../../ref.ts" />
 var Spawner = (function () {
     function Spawner() {
         var _this = this;

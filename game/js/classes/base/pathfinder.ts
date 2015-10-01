@@ -1,4 +1,4 @@
-/// <reference path="../ref.ts" />
+/// <reference path="../../ref.ts" />
 class Pathfinder {
 	mode: string = "stupid";
 	debugimage: any;

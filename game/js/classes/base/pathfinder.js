@@ -1,4 +1,4 @@
-/// <reference path="../ref.ts" />
+/// <reference path="../../ref.ts" />
 var Pathfinder = (function () {
     function Pathfinder() {
         this.mode = "stupid";
