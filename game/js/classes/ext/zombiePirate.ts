@@ -12,11 +12,18 @@ class ZombiePirate extends SpriteEntity {
 	currentGrid: Grid;
 	pathTargetGrid: Grid;
 	attacking: boolean = false;
+	
+
+
 	constructor(x: number, y: number) {
         super();
+
+        this.collidable = true;
+        
 		// Set Sprite
 		var image : any = new Image();
 		image.src = "images/zombie-pirate.png";
+		this.boundryBox = [32, 48];
 		this.sprite = new Sprite(32, 48, image);
 		this.sprite.x = x;
 		this.sprite.y = y;

@@ -10,6 +10,8 @@ var SpriteEntity = (function (_super) {
     function SpriteEntity(sprite) {
         if (sprite === void 0) { sprite = null; }
         _super.call(this);
+        this.boundryBox = [];
+        this.collidable = false;
         this.sprite = sprite;
         this.entityID = Game.getInstance().getEntityIndex();
     }

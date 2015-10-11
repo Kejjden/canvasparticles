@@ -49,6 +49,7 @@ class FlaskGreen extends SpriteEntity {
 			return;
 		}
 
+		// Collision for map
 		if(this.direction == 'down') {
 			var nextGrid: Grid = Game.getGridsFor(this.sprite.x, this.sprite.y + this.throwspeed);
 			var collided: boolean = Game.getInstance().level.checkCollision(this.sprite.x, this.sprite.y + this.throwspeed, nextGrid);
@@ -74,6 +75,29 @@ class FlaskGreen extends SpriteEntity {
 				this.hasCollided = true;
 			}
 		}
+
+		// Entity collision
+		if(this.direction == 'down') {
+			var collided: boolean = Game.getInstance().level.checkEntityCollision(this.sprite.x, this.sprite.y + this.throwspeed);
+			if(collided) {
+				this.hasCollided = true;
+			}
+		} else if (this.direction == 'up') {
+			var collided: boolean = Game.getInstance().level.checkEntityCollision(this.sprite.x, this.sprite.y - this.throwspeed);
+			if (collided) {
+				this.hasCollided = true;
+			}
+		} else if (this.direction == 'left') {
+			var collided: boolean = Game.getInstance().level.checkEntityCollision(this.sprite.x - this.throwspeed, this.sprite.y);
+			if(collided) {
+				this.hasCollided = true;
+			}
+		} else if (this.direction == 'right') {
+			var collided: boolean = Game.getInstance().level.checkEntityCollision(this.sprite.x + this.throwspeed, this.sprite.y);
+			if(collided) {
+				this.hasCollided = true;
+			}
+		}	
 
 		if(this.hasCollided) {
 			this.sprite.setState('hit');

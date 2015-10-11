@@ -44,6 +44,7 @@ var FlaskGreen = (function (_super) {
         if (this.hasCollided) {
             return;
         }
+        // Collision for map
         if (this.direction == 'down') {
             var nextGrid = Game.getGridsFor(this.sprite.x, this.sprite.y + this.throwspeed);
             var collided = Game.getInstance().level.checkCollision(this.sprite.x, this.sprite.y + this.throwspeed, nextGrid);
@@ -68,6 +69,31 @@ var FlaskGreen = (function (_super) {
         else if (this.direction == 'right') {
             var nextGrid = Game.getGridsFor(this.sprite.x + this.throwspeed, this.sprite.y);
             var collided = Game.getInstance().level.checkCollision(this.sprite.x + this.throwspeed, this.sprite.y, nextGrid);
+            if (collided) {
+                this.hasCollided = true;
+            }
+        }
+        // Entity collision
+        if (this.direction == 'down') {
+            var collided = Game.getInstance().level.checkEntityCollision(this.sprite.x, this.sprite.y + this.throwspeed);
+            if (collided) {
+                this.hasCollided = true;
+            }
+        }
+        else if (this.direction == 'up') {
+            var collided = Game.getInstance().level.checkEntityCollision(this.sprite.x, this.sprite.y - this.throwspeed);
+            if (collided) {
+                this.hasCollided = true;
+            }
+        }
+        else if (this.direction == 'left') {
+            var collided = Game.getInstance().level.checkEntityCollision(this.sprite.x - this.throwspeed, this.sprite.y);
+            if (collided) {
+                this.hasCollided = true;
+            }
+        }
+        else if (this.direction == 'right') {
+            var collided = Game.getInstance().level.checkEntityCollision(this.sprite.x + this.throwspeed, this.sprite.y);
             if (collided) {
                 this.hasCollided = true;
             }

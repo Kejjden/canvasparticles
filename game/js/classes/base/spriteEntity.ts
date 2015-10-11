@@ -3,7 +3,8 @@
 class SpriteEntity extends Entity {
 	sprite: Sprite;
     entityID: number;
-    
+    boundryBox: any[] = [];
+    collidable: boolean = false;
     constructor(sprite: Sprite = null) {
         super();
         this.sprite = sprite;

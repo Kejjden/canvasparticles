@@ -16,9 +16,11 @@ var ZombiePirate = (function (_super) {
         this.path = [];
         this.pathSize = 0;
         this.attacking = false;
+        this.collidable = true;
         // Set Sprite
         var image = new Image();
         image.src = "images/zombie-pirate.png";
+        this.boundryBox = [32, 48];
         this.sprite = new Sprite(32, 48, image);
         this.sprite.x = x;
         this.sprite.y = y;
