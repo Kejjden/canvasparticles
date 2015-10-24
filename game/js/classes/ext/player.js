@@ -13,6 +13,7 @@ var Player = (function (_super) {
         this.walkspeed = 3;
         this.attacking = false;
         this.direction = 'down';
+        this.weaponCooldown = 0;
         this.debugimage = new Image();
         this.debugimage.src = "images/grid-green.png";
         // Set Sprite
@@ -40,6 +41,9 @@ var Player = (function (_super) {
         this.weapon = new FlaskGreen();
     }
     Player.prototype.update = function () {
+        if (this.weaponCooldown > 0) {
+            this.weaponCooldown -= 1;
+        }
         if (this.sprite.currentState.name == "walkDown") {
             this.walk('down');
         }

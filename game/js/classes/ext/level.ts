@@ -123,31 +123,19 @@ class Level {
 		];
 
 		var ret: boolean = false;
-		Game.getInstance().entities.forEach(entity => { 
+		for (var i = 0; i < Game.getInstance().entities.length; ++i) {
+			var entity = Game.getInstance().entities[i];
 			if (entity.collidable) {
 				var entityPositions: any[] = [
 					[entity.sprite.x, entity.sprite.y],
 					[entity.sprite.x + entity.boundryBox[0], entity.sprite.y + entity.boundryBox[1]]
 				];
 
-				Game.getInstance().context.beginPath();
-				Game.getInstance().context.rect(entity.sprite.x, entity.sprite.y, entity.boundryBox[0], entity.boundryBox[1]);
-				Game.getInstance().context.fillStyle = 'yellow';
-				Game.getInstance().context.fill();
-
-				Game.getInstance().context.beginPath();
-				Game.getInstance().context.rect(positions[0][0], positions[0][1], 31, 31);
-				Game.getInstance().context.fillStyle = 'red';
-				Game.getInstance().context.fill();
-
 				if (Game.getInstance().level.checkCollisionOverlap(positions[0], positions[1], entityPositions[0], entityPositions[1])) {
-					console.log('COLLISION TO ENTOTY');
-					ret = true;
-					break;
-					
+					return entity;
 				}
 			}
-		});
+		}
 
 		return ret;
 	}

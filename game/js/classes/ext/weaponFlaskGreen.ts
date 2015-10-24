@@ -5,8 +5,10 @@ class FlaskGreen extends SpriteEntity {
 	state: number = 0;
 	x: number = 0;
 	y: number = 0;
+	cooldown: number = 30;
 	throwspeed: number = 5;
 	direction: string;
+	impactDamage: number = 70;
 	renderSlowdown: number = 2;
 	renderTick: number = 0;
 	falloff: number = 0;
@@ -50,54 +52,41 @@ class FlaskGreen extends SpriteEntity {
 		}
 
 		// Collision for map
+		var mapCollided = false;
 		if(this.direction == 'down') {
 			var nextGrid: Grid = Game.getGridsFor(this.sprite.x, this.sprite.y + this.throwspeed);
-			var collided: boolean = Game.getInstance().level.checkCollision(this.sprite.x, this.sprite.y + this.throwspeed, nextGrid);
-			if(collided) {
-				this.hasCollided = true;
-			}
+			mapCollided = Game.getInstance().level.checkCollision(this.sprite.x, this.sprite.y + this.throwspeed, nextGrid);
 		} else if (this.direction == 'up') {
 			var nextGrid: Grid = Game.getGridsFor(this.sprite.x, this.sprite.y - this.throwspeed);
-			var collided: boolean = Game.getInstance().level.checkCollision(this.sprite.x, this.sprite.y - this.throwspeed, nextGrid);
-			if (collided) {
-				this.hasCollided = true;
-			}
+			mapCollided = Game.getInstance().level.checkCollision(this.sprite.x, this.sprite.y - this.throwspeed, nextGrid);
 		} else if (this.direction == 'left') {
 			var nextGrid: Grid = Game.getGridsFor(this.sprite.x - this.throwspeed, this.sprite.y);
-			var collided: boolean = Game.getInstance().level.checkCollision(this.sprite.x - this.throwspeed, this.sprite.y, nextGrid);
-			if(collided) {
-				this.hasCollided = true;
-			}
+			mapCollided = Game.getInstance().level.checkCollision(this.sprite.x - this.throwspeed, this.sprite.y, nextGrid);
 		} else if (this.direction == 'right') {
 			var nextGrid: Grid = Game.getGridsFor(this.sprite.x + this.throwspeed, this.sprite.y);
-			var collided: boolean = Game.getInstance().level.checkCollision(this.sprite.x + this.throwspeed, this.sprite.y, nextGrid);
-			if(collided) {
-				this.hasCollided = true;
-			}
+			mapCollided = Game.getInstance().level.checkCollision(this.sprite.x + this.throwspeed, this.sprite.y, nextGrid);
+		}
+		if(mapCollided) {
+			this.hasCollided = true;
 		}
 
 		// Entity collision
+		var entityCollision: any = false;
 		if(this.direction == 'down') {
-			var collided: boolean = Game.getInstance().level.checkEntityCollision(this.sprite.x, this.sprite.y + this.throwspeed);
-			if(collided) {
-				this.hasCollided = true;
-			}
+			entityCollision = Game.getInstance().level.checkEntityCollision(this.sprite.x, this.sprite.y + this.throwspeed);
 		} else if (this.direction == 'up') {
-			var collided: boolean = Game.getInstance().level.checkEntityCollision(this.sprite.x, this.sprite.y - this.throwspeed);
-			if (collided) {
-				this.hasCollided = true;
-			}
+			entityCollision = Game.getInstance().level.checkEntityCollision(this.sprite.x, (this.sprite.y - this.throwspeed) + 32);
 		} else if (this.direction == 'left') {
-			var collided: boolean = Game.getInstance().level.checkEntityCollision(this.sprite.x - this.throwspeed, this.sprite.y);
-			if(collided) {
-				this.hasCollided = true;
-			}
+			entityCollision = Game.getInstance().level.checkEntityCollision(this.sprite.x - this.throwspeed, this.sprite.y);
 		} else if (this.direction == 'right') {
-			var collided: boolean = Game.getInstance().level.checkEntityCollision(this.sprite.x + this.throwspeed, this.sprite.y);
-			if(collided) {
-				this.hasCollided = true;
+			entityCollision = Game.getInstance().level.checkEntityCollision(this.sprite.x + this.throwspeed, this.sprite.y);
+		}
+		if(entityCollision)  {
+			if(entityCollision.damageable) {
+				entityCollision.damage(this.impactDamage, 'impact');
 			}
-		}	
+			this.hasCollided = true;
+		}
 
 		if(this.hasCollided) {
 			this.sprite.setState('hit');
@@ -155,8 +144,12 @@ class FlaskGreen extends SpriteEntity {
 	}
 
 	use() {
+		if(Game.getInstance().player.weaponCooldown > 0) {
+			return;
+		}
 		var flask: FlaskGreen = new FlaskGreen();
 		flask.init();
 		Game.getInstance().entities.push(flask);
+		Game.getInstance().player.weaponCooldown = this.cooldown;
 	}
 }

@@ -7,6 +7,7 @@ class Player extends SpriteEntity {
 	debugimage: any;
 	direction: string = 'down';
 	weapon: any;
+	weaponCooldown: number = 0;
 
 	constructor() {
         super();
@@ -44,6 +45,7 @@ class Player extends SpriteEntity {
 
 
 	update() {
+		if (this.weaponCooldown > 0) { this.weaponCooldown -= 1; }
 		if (this.sprite.currentState.name == "walkDown")	{ this.walk('down');}
 		if (this.sprite.currentState.name == "walkUp")		{ this.walk('up');}
 		if (this.sprite.currentState.name == "walkLeft")	{ this.walk('left');}

@@ -12,7 +12,9 @@ var FlaskGreen = (function (_super) {
         this.state = 0;
         this.x = 0;
         this.y = 0;
+        this.cooldown = 30;
         this.throwspeed = 5;
+        this.impactDamage = 70;
         this.renderSlowdown = 2;
         this.renderTick = 0;
         this.falloff = 0;
@@ -45,58 +47,45 @@ var FlaskGreen = (function (_super) {
             return;
         }
         // Collision for map
+        var mapCollided = false;
         if (this.direction == 'down') {
             var nextGrid = Game.getGridsFor(this.sprite.x, this.sprite.y + this.throwspeed);
-            var collided = Game.getInstance().level.checkCollision(this.sprite.x, this.sprite.y + this.throwspeed, nextGrid);
-            if (collided) {
-                this.hasCollided = true;
-            }
+            mapCollided = Game.getInstance().level.checkCollision(this.sprite.x, this.sprite.y + this.throwspeed, nextGrid);
         }
         else if (this.direction == 'up') {
             var nextGrid = Game.getGridsFor(this.sprite.x, this.sprite.y - this.throwspeed);
-            var collided = Game.getInstance().level.checkCollision(this.sprite.x, this.sprite.y - this.throwspeed, nextGrid);
-            if (collided) {
-                this.hasCollided = true;
-            }
+            mapCollided = Game.getInstance().level.checkCollision(this.sprite.x, this.sprite.y - this.throwspeed, nextGrid);
         }
         else if (this.direction == 'left') {
             var nextGrid = Game.getGridsFor(this.sprite.x - this.throwspeed, this.sprite.y);
-            var collided = Game.getInstance().level.checkCollision(this.sprite.x - this.throwspeed, this.sprite.y, nextGrid);
-            if (collided) {
-                this.hasCollided = true;
-            }
+            mapCollided = Game.getInstance().level.checkCollision(this.sprite.x - this.throwspeed, this.sprite.y, nextGrid);
         }
         else if (this.direction == 'right') {
             var nextGrid = Game.getGridsFor(this.sprite.x + this.throwspeed, this.sprite.y);
-            var collided = Game.getInstance().level.checkCollision(this.sprite.x + this.throwspeed, this.sprite.y, nextGrid);
-            if (collided) {
-                this.hasCollided = true;
-            }
+            mapCollided = Game.getInstance().level.checkCollision(this.sprite.x + this.throwspeed, this.sprite.y, nextGrid);
+        }
+        if (mapCollided) {
+            this.hasCollided = true;
         }
         // Entity collision
+        var entityCollision = false;
         if (this.direction == 'down') {
-            var collided = Game.getInstance().level.checkEntityCollision(this.sprite.x, this.sprite.y + this.throwspeed);
-            if (collided) {
-                this.hasCollided = true;
-            }
+            entityCollision = Game.getInstance().level.checkEntityCollision(this.sprite.x, this.sprite.y + this.throwspeed);
         }
         else if (this.direction == 'up') {
-            var collided = Game.getInstance().level.checkEntityCollision(this.sprite.x, this.sprite.y - this.throwspeed);
-            if (collided) {
-                this.hasCollided = true;
-            }
+            entityCollision = Game.getInstance().level.checkEntityCollision(this.sprite.x, (this.sprite.y - this.throwspeed) + 32);
         }
         else if (this.direction == 'left') {
-            var collided = Game.getInstance().level.checkEntityCollision(this.sprite.x - this.throwspeed, this.sprite.y);
-            if (collided) {
-                this.hasCollided = true;
-            }
+            entityCollision = Game.getInstance().level.checkEntityCollision(this.sprite.x - this.throwspeed, this.sprite.y);
         }
         else if (this.direction == 'right') {
-            var collided = Game.getInstance().level.checkEntityCollision(this.sprite.x + this.throwspeed, this.sprite.y);
-            if (collided) {
-                this.hasCollided = true;
+            entityCollision = Game.getInstance().level.checkEntityCollision(this.sprite.x + this.throwspeed, this.sprite.y);
+        }
+        if (entityCollision) {
+            if (entityCollision.damageable) {
+                entityCollision.damage(this.impactDamage, 'impact');
             }
+            this.hasCollided = true;
         }
         if (this.hasCollided) {
             this.sprite.setState('hit');
@@ -154,9 +143,13 @@ var FlaskGreen = (function (_super) {
         _super.prototype.render.call(this);
     };
     FlaskGreen.prototype.use = function () {
+        if (Game.getInstance().player.weaponCooldown > 0) {
+            return;
+        }
         var flask = new FlaskGreen();
         flask.init();
         Game.getInstance().entities.push(flask);
+        Game.getInstance().player.weaponCooldown = this.cooldown;
     };
     return FlaskGreen;
 })(SpriteEntity);

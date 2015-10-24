@@ -9,14 +9,17 @@ var ZombiePirate = (function (_super) {
     __extends(ZombiePirate, _super);
     function ZombiePirate(x, y) {
         _super.call(this);
-        this.health = 10;
-        this.walkspeed = 2;
+        this.health = 100;
+        this.walkspeedDelay = 2;
         this.pathTick = 0;
         this.pathIndex = 0;
         this.path = [];
         this.pathSize = 0;
         this.attacking = false;
+        this.stunned = false;
+        this.isDead = false;
         this.collidable = true;
+        this.damageable = true;
         // Set Sprite
         var image = new Image();
         image.src = "images/zombie-pirate.png";
@@ -30,6 +33,7 @@ var ZombiePirate = (function (_super) {
         this.sprite.addState(new AnimationState("walkLeft", [[2, 1], [2, 2], [2, 3]]));
         this.sprite.addState(new AnimationState("walkRight", [[3, 1], [3, 2], [3, 3]]));
         this.sprite.addState(new AnimationState("walkUp", [[4, 1], [4, 2], [4, 3]]));
+        this.sprite.addState(new AnimationState("deathSpin", [[1, 1], [2, 1], [4, 1], [3, 1], [1, 1], [2, 1], [4, 1], [3, 1]]));
         this.sprite.addState(new AnimationState("standDown", [[1, 2]]));
         this.sprite.addState(new AnimationState("standLeft", [[2, 2]]));
         this.sprite.addState(new AnimationState("standRight", [[3, 2]]));
@@ -38,6 +42,29 @@ var ZombiePirate = (function (_super) {
         this.pathFinder = new Pathfinder();
         this.updatePath();
     }
+    ZombiePirate.prototype.damage = function (amount, type) {
+        this.health -= amount;
+        if (type == 'impact') {
+            this.stun();
+        }
+        if (this.health <= 0) {
+            this.death();
+        }
+    };
+    ZombiePirate.prototype.stun = function () {
+        var _this = this;
+        var self = this;
+        this.stunned = true;
+        this.walkspeedDelay = this.walkspeedDelay * 2;
+        setTimeout(function () {
+            self.stunned = false;
+            _this.walkspeedDelay = _this.walkspeedDelay / 2;
+        }, 1500);
+    };
+    ZombiePirate.prototype.death = function () {
+        this.isDead = true;
+        this.sprite.setState("deathSpin");
+    };
     ZombiePirate.prototype.updatePath = function () {
         var targetGrid = Game.getGridsFor(Game.getInstance().player.sprite.x, Game.getInstance().player.sprite.y);
         this.currentGrid = Game.getGridsFor(this.sprite.x, this.sprite.y);
@@ -76,7 +103,13 @@ var ZombiePirate = (function (_super) {
         return collision;
     };
     ZombiePirate.prototype.update = function () {
-        if (this.pathTick % 2 == 0 && this.pathFinder.pathIndex < this.pathFinder.pathSize) {
+        if (this.sprite.loop == 1) {
+            if (this.sprite.currentState.name == "deathSpin") {
+                this.destroy();
+                return;
+            }
+        }
+        if (this.pathTick % this.walkspeedDelay == 0 && this.pathFinder.pathIndex < this.pathFinder.pathSize && !this.isDead) {
             //this.attacking = this.checkPlayerCollision();
             if (this.attacking) {
                 l('attacking');

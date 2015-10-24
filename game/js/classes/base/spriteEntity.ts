@@ -5,6 +5,7 @@ class SpriteEntity extends Entity {
     entityID: number;
     boundryBox: any[] = [];
     collidable: boolean = false;
+    damageable: boolean = false;
     constructor(sprite: Sprite = null) {
         super();
         this.sprite = sprite;

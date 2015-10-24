@@ -1,9 +1,10 @@
 /// <reference path="../../ref.ts" />
 
 class ZombiePirate extends SpriteEntity {
-	health: number = 10;
-	walkspeed: number = 2;
+	health: number = 100;
+	walkspeedDelay: number = 2;
 	pathTick: number = 0;
+
 	pathIndex: number = 0;
 	path: any[] = [];
 	pathSize: number = 0;
@@ -12,14 +13,16 @@ class ZombiePirate extends SpriteEntity {
 	currentGrid: Grid;
 	pathTargetGrid: Grid;
 	attacking: boolean = false;
-	
+	stunned: boolean = false;
+	isDead: boolean = false;
 
 
 	constructor(x: number, y: number) {
         super();
 
         this.collidable = true;
-        
+        this.damageable = true;
+
 		// Set Sprite
 		var image : any = new Image();
 		image.src = "images/zombie-pirate.png";
@@ -34,6 +37,8 @@ class ZombiePirate extends SpriteEntity {
 		this.sprite.addState(new AnimationState("walkLeft", [[2,1],[2,2],[2,3]]));
 		this.sprite.addState(new AnimationState("walkRight",[[3,1],[3,2],[3,3]]));
 		this.sprite.addState(new AnimationState("walkUp", 	[[4,1],[4,2],[4,3]]));
+		this.sprite.addState(new AnimationState("deathSpin", [[1,1], [2,1], [4,1], [3,1], [1,1], [2,1], [4,1], [3,1]]))
+
 
 		this.sprite.addState(new AnimationState("standDown", [[1,2]]));
 		this.sprite.addState(new AnimationState("standLeft", [[2,2]]));
@@ -42,6 +47,33 @@ class ZombiePirate extends SpriteEntity {
 		this.sprite.setState("walkDown");
 		this.pathFinder = new Pathfinder();
 		this.updatePath();
+	}
+
+	damage(amount, type) {
+		
+		this.health -= amount;
+		if(/*this.health > 0 &&*/ type == 'impact') {
+			this.stun();
+		}
+		if(this.health <= 0) {
+			this.death();
+		}
+	}
+
+	stun() {
+		var self = this;
+		this.stunned = true;
+		this.walkspeedDelay = this.walkspeedDelay * 2;
+		setTimeout(() => {
+			self.stunned = false;
+			this.walkspeedDelay = this.walkspeedDelay / 2;
+		}, 1500);
+		
+	}
+
+	death() {
+		this.isDead = true;
+		this.sprite.setState("deathSpin");
 	}
 
 	updatePath() {
@@ -68,7 +100,13 @@ class ZombiePirate extends SpriteEntity {
 	}
 
 	update() {
-		if(this.pathTick%2 == 0 && this.pathFinder.pathIndex < this.pathFinder.pathSize) {
+		if (this.sprite.loop == 1) {
+			if (this.sprite.currentState.name == "deathSpin") {
+				this.destroy();
+				return;
+			}
+		}
+		if(this.pathTick%this.walkspeedDelay == 0 && this.pathFinder.pathIndex < this.pathFinder.pathSize && !this.isDead) {
 			//this.attacking = this.checkPlayerCollision();
 			if(this.attacking) {
 				l('attacking');
@@ -86,6 +124,8 @@ class ZombiePirate extends SpriteEntity {
 				if (this.sprite.y > this.pathFinder.getCurrent().y * 32) {
 					this.sprite.y -= 1;
 				}
+				
+
 				if (this.sprite.x == this.pathFinder.getCurrent().x*32 && this.sprite.y == this.pathFinder.getCurrent().y*32 && this.sprite.x%32 == 0 && this.sprite.y%32 == 0) {
 					// New sprite, new state?
 					var prevGrid: Grid = this.pathFinder.getCurrent();

@@ -73,28 +73,20 @@ var Level = (function () {
             [x, y],
             [x + 31, y + 31]
         ];
-        //var ret: boolean = false;
-        Game.getInstance().entities.forEach(function (entity) {
+        var ret = false;
+        for (var i = 0; i < Game.getInstance().entities.length; ++i) {
+            var entity = Game.getInstance().entities[i];
             if (entity.collidable) {
                 var entityPositions = [
                     [entity.sprite.x, entity.sprite.y],
                     [entity.sprite.x + entity.boundryBox[0], entity.sprite.y + entity.boundryBox[1]]
                 ];
-                Game.getInstance().context.beginPath();
-                Game.getInstance().context.rect(entity.sprite.x, entity.sprite.y, entity.boundryBox[0], entity.boundryBox[1]);
-                Game.getInstance().context.fillStyle = 'yellow';
-                Game.getInstance().context.fill();
-                Game.getInstance().context.beginPath();
-                Game.getInstance().context.rect(positions[0][0], positions[0][1], 31, 31);
-                Game.getInstance().context.fillStyle = 'red';
-                Game.getInstance().context.fill();
                 if (Game.getInstance().level.checkCollisionOverlap(positions[0], positions[1], entityPositions[0], entityPositions[1])) {
-                    console.log('COLLISION TO ENTOTY');
-                    return true;
+                    return entity;
                 }
             }
-        });
-        return false;
+        }
+        return ret;
     };
     Level.prototype.checkCollisionOverlap = function (l1, r1, l2, r2) {
         var ret = true;
